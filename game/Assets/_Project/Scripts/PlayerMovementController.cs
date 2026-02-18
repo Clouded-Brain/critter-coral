@@ -71,18 +71,18 @@ namespace CoralCritter
 #if ENABLE_INPUT_SYSTEM
             if (Keyboard.current != null)
             {
-                var x = 0f;
-                var y = 0f;
-
-                if (Keyboard.current.aKey.isPressed) x -= 1f;
-                if (Keyboard.current.dKey.isPressed) x += 1f;
-                if (Keyboard.current.sKey.isPressed) y -= 1f;
-                if (Keyboard.current.wKey.isPressed) y += 1f;
-
-                return new Vector2(x, y);
+                return ReadKeyboardVector(
+                    Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed,
+                    Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed,
+                    Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed,
+                    Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed);
             }
 #endif
-            return new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+            return ReadKeyboardVector(
+                Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow),
+                Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow),
+                Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow),
+                Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow));
         }
 
         private static bool ReadSprintInput()
@@ -94,6 +94,19 @@ namespace CoralCritter
             }
 #endif
             return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        }
+
+        private static Vector2 ReadKeyboardVector(bool left, bool right, bool down, bool up)
+        {
+            var x = 0f;
+            var y = 0f;
+
+            if (left) x -= 1f;
+            if (right) x += 1f;
+            if (down) y -= 1f;
+            if (up) y += 1f;
+
+            return new Vector2(x, y);
         }
     }
 }

@@ -44,6 +44,7 @@ namespace CoralCritter
                 player.name = "Player";
             }
 
+            player.tag = "Player";
             player.transform.position = playerSpawn;
 
             var collider = player.GetComponent<CapsuleCollider>();

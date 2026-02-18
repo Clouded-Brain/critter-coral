@@ -62,10 +62,10 @@ This auto-creates:
 
 ## Troubleshooting
 - **Camera does not follow player:**
-  - Re-run `PrototypeSceneSetup -> Create/Refresh Test Setup`.
-  - Confirm `Main Camera` has `IsometricCameraController` and its target is `Player`.
+  - Re-run `PrototypeSceneSetup -> Create/Refresh Test Setup` while NOT in Play mode.
+  - Confirm `Main Camera` has `IsometricCameraController`; it now auto-binds to a `Player` object if target is empty.
 - **Player does not move:**
-  - Movement now supports both legacy and new input system keyboard controls (WASD + Shift).
+  - Movement reads direct keyboard keys (WASD/Arrow keys + Shift), so it works with either legacy or new Input System project settings.
 - **Terrain is pink:**
   - The generator now creates fallback materials automatically and prefers URP shaders.
   - If pink persists, verify URP package import completed and re-run `Generate`.

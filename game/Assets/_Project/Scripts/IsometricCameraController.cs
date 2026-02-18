@@ -9,6 +9,7 @@ namespace CoralCritter
     public class IsometricCameraController : MonoBehaviour
     {
         [SerializeField] private Transform target;
+        [SerializeField] private bool autoFindPlayerTarget = true;
         [SerializeField] private Vector3 offset = new(0f, 18f, -16f);
         [SerializeField] private float followSmooth = 8f;
         [SerializeField] private float minZoom = 35f;
@@ -24,13 +25,18 @@ namespace CoralCritter
         {
             _camera = GetComponent<Camera>();
             transform.rotation = Quaternion.Euler(eulerViewAngle);
+            TryAutoBindTarget();
         }
 
         private void LateUpdate()
         {
             if (target == null)
             {
-                return;
+                TryAutoBindTarget();
+                if (target == null)
+                {
+                    return;
+                }
             }
 
             var desiredPosition = target.position + offset;
@@ -46,6 +52,27 @@ namespace CoralCritter
         public void SetTarget(Transform nextTarget)
         {
             target = nextTarget;
+        }
+
+        private void TryAutoBindTarget()
+        {
+            if (!autoFindPlayerTarget || target != null)
+            {
+                return;
+            }
+
+            var playerByName = GameObject.Find("Player");
+            if (playerByName != null)
+            {
+                target = playerByName.transform;
+                return;
+            }
+
+            var playerByTag = GameObject.FindGameObjectWithTag("Player");
+            if (playerByTag != null)
+            {
+                target = playerByTag.transform;
+            }
         }
     }
 }
