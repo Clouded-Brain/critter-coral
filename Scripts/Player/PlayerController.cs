@@ -23,6 +23,12 @@ public class PlayerController : MonoBehaviour
     [Tooltip("Max time you can hold jump for extra height (seconds)")]
     public float maxJumpHoldTime = 0.25f;
 
+    [Tooltip("How long jump input is remembered before landing")]
+    public float jumpBufferTime = 0.15f;
+
+    [Tooltip("How long after leaving ground you can still jump")]
+    public float coyoteTime = 0.12f;
+
     [Header("Gravity")]
     [Tooltip("Gravity multiplier while rising with jump held")]
     public float gravityMultiplier = 3f;
@@ -45,9 +51,10 @@ public class PlayerController : MonoBehaviour
     private Vector3 moveDirection;
     private bool isSprinting;
     private bool isGrounded;
-    private bool jumpPressed;
     private bool jumpHeld;
     private float jumpHoldTimer;
+    private float jumpBufferTimer;
+    private float coyoteTimer;
     private Vector3 groundNormal = Vector3.up;
 
     void Start()
@@ -93,10 +100,9 @@ public class PlayerController : MonoBehaviour
         moveDirection = Quaternion.Euler(0f, isoAngle, 0f) * new Vector3(h, 0f, v).normalized;
         isSprinting = kb.leftShiftKey.isPressed;
 
-        if (kb.spaceKey.wasPressedThisFrame && isGrounded)
+        if (kb.spaceKey.wasPressedThisFrame)
         {
-            jumpPressed = true;
-            jumpHoldTimer = 0f;
+            jumpBufferTimer = jumpBufferTime;
         }
         jumpHeld = kb.spaceKey.isPressed;
     }
@@ -110,11 +116,13 @@ public class PlayerController : MonoBehaviour
             out RaycastHit hit, groundCheckDistance + 0.1f, groundLayer))
         {
             isGrounded = true;
+            coyoteTimer = coyoteTime;
             groundNormal = hit.normal;
         }
         else
         {
             isGrounded = false;
+            coyoteTimer -= Time.fixedDeltaTime;
             groundNormal = Vector3.up;
         }
     }
@@ -180,9 +188,14 @@ public class PlayerController : MonoBehaviour
 
     void ApplyJump()
     {
-        if (jumpPressed)
+        jumpBufferTimer -= Time.fixedDeltaTime;
+
+        if (jumpBufferTimer > 0f && coyoteTimer > 0f)
         {
-            jumpPressed = false;
+            jumpBufferTimer = 0f;
+            coyoteTimer = 0f;
+            jumpHoldTimer = 0f;
+
             Vector3 v = rb.linearVelocity;
             v.y = jumpForce;
             rb.linearVelocity = v;
