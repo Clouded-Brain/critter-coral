@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CoralCritter
 {
@@ -79,16 +80,12 @@ namespace CoralCritter
 
         private Material EnsureTerrainMaterial()
         {
-            if (terrainMaterial != null)
+            if (terrainMaterial != null && terrainMaterial.shader != null && terrainMaterial.shader.isSupported)
             {
                 return terrainMaterial;
             }
 
-            var shader = Shader.Find("Universal Render Pipeline/Lit")
-                         ?? Shader.Find("Universal Render Pipeline/Simple Lit")
-                         ?? Shader.Find("Standard")
-                         ?? Shader.Find("Unlit/Color");
-
+            var shader = GetBestAvailableShader();
             var fallback = new Material(shader);
             fallback.color = new Color(0.32f, 0.62f, 0.35f, 1f);
 
@@ -98,21 +95,37 @@ namespace CoralCritter
 
         private Material EnsureWaterMaterial()
         {
-            if (waterMaterial != null)
+            if (waterMaterial != null && waterMaterial.shader != null && waterMaterial.shader.isSupported)
             {
                 return waterMaterial;
             }
 
-            var shader = Shader.Find("Universal Render Pipeline/Lit")
-                         ?? Shader.Find("Universal Render Pipeline/Simple Lit")
-                         ?? Shader.Find("Standard")
-                         ?? Shader.Find("Unlit/Color");
-
+            var shader = GetBestAvailableShader();
             var fallback = new Material(shader);
             fallback.color = new Color(0.1f, 0.35f, 0.65f, 0.85f);
 
             waterMaterial = fallback;
             return waterMaterial;
+        }
+
+
+        private static Shader GetBestAvailableShader()
+        {
+            var usingRenderPipeline = GraphicsSettings.currentRenderPipeline != null;
+
+            if (usingRenderPipeline)
+            {
+                return Shader.Find("Universal Render Pipeline/Lit")
+                       ?? Shader.Find("Universal Render Pipeline/Simple Lit")
+                       ?? Shader.Find("Standard")
+                       ?? Shader.Find("Unlit/Color")
+                       ?? Shader.Find("Sprites/Default");
+            }
+
+            return Shader.Find("Standard")
+                   ?? Shader.Find("Unlit/Color")
+                   ?? Shader.Find("Sprites/Default")
+                   ?? Shader.Find("Universal Render Pipeline/Lit");
         }
 
         [ContextMenu("Clear")]

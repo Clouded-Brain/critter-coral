@@ -66,7 +66,7 @@ namespace CoralCritter
 
             controller.height = playerHeight;
             controller.radius = playerRadius;
-            controller.center = new Vector3(0f, playerHeight * 0.5f, 0f);
+            controller.center = Vector3.zero;
             controller.stepOffset = 0.35f;
             controller.skinWidth = 0.03f;
             controller.slopeLimit = 55f;

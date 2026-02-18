@@ -68,8 +68,8 @@ This auto-creates and assigns everything needed for a playable test loop:
   - Click inside the Game view once so Unity captures keyboard focus.
   - Movement reads keyboard input for both Input System and Legacy Input Manager modes.
 - **Terrain is pink:**
-  - The generator now creates fallback materials automatically and prefers URP shaders.
-  - If pink persists, verify URP package import completed and re-run `Generate`.
+  - The generator now auto-detects the active render pipeline and rebuilds fallback terrain/water materials when an unsupported shader is found.
+  - Re-run `PrototypeSceneSetup -> Create/Refresh Test Setup` to regenerate materials for your current pipeline.
 - **Player falls through map:**
   - The generated island now includes a `MeshCollider`; re-run setup if scene was created before this update.
 
