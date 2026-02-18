@@ -93,7 +93,10 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Header("Water")]
     [Range(0f, 0.5f)]
-    public float waterLevel = 0.07f;
+    public float waterLevel = 0.04f;
+
+    [Tooltip("Additional world-space Y offset applied to the rendered water plane")]
+    public float waterPlaneYOffset = -1.4f;
     public Color waterColor = new Color(0.08f, 0.35f, 0.6f, 0.75f);
 
     [Header("Terrain Colors (auto-painted by slope)")]
@@ -281,7 +284,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
                 float inlandMask = Mathf.Clamp01((streamMask + lakeMask) * inlandWaterStrength);
                 float inlandAllowed = Mathf.SmoothStep(0.35f, 0.9f, mask) * (1f - oceanEdge);
-                float inlandWaterLevel = waterLevel + 0.008f;
+                float inlandWaterLevel = waterLevel + 0.004f;
                 height01 = Mathf.Lerp(height01, inlandWaterLevel, inlandMask * inlandAllowed);
 
                 heights[z, x] = height01 * terrainHeight;
@@ -421,7 +424,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         // ── VERTEX COLORS — paint by slope and height ──
         Vector3[] normals = mesh.normals;
         Color[] colors = new Color[totalVerts];
-        float waterWorldH = waterLevel * terrainHeight;
+        float waterWorldH = waterLevel * terrainHeight + waterPlaneYOffset;
 
         for (int i = 0; i < totalVerts; i++)
         {
@@ -469,7 +472,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         waterObj = GameObject.CreatePrimitive(PrimitiveType.Plane);
         waterObj.name = "WaterPlane";
 
-        float waterWorldHeight = waterLevel * terrainHeight;
+        float waterWorldHeight = waterLevel * terrainHeight + waterPlaneYOffset;
         waterObj.transform.position = new Vector3(0f, waterWorldHeight, 0f);
 
         float planeScale = terrainSize / 10f * 1.5f;
@@ -495,7 +498,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         {
             float bestX = 0f, bestZ = 0f;
             float bestHeight = SampleHeight(0f, 0f);
-            float minH = waterLevel * terrainHeight + 2f;
+            float minH = waterLevel * terrainHeight + waterPlaneYOffset + 2f;
 
             for (int i = 0; i < 20; i++)
             {
@@ -536,7 +539,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         };
 
         Random.InitState(seed + 999);
-        float minH = waterLevel * terrainHeight + 1f;
+        float minH = waterLevel * terrainHeight + waterPlaneYOffset + 1f;
         int placed = 0;
 
         for (int attempt = 0; attempt < 50 && placed < 10; attempt++)
@@ -664,7 +667,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         Gizmos.DrawWireCube(Vector3.up * terrainHeight * 0.5f,
             new Vector3(terrainSize, terrainHeight, terrainSize));
         Gizmos.color = new Color(0f, 0.5f, 1f, 0.3f);
-        Gizmos.DrawCube(Vector3.up * waterLevel * terrainHeight,
+        Gizmos.DrawCube(Vector3.up * (waterLevel * terrainHeight + waterPlaneYOffset),
             new Vector3(terrainSize, 0.1f, terrainSize));
     }
 }
