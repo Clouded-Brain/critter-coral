@@ -74,7 +74,11 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Tooltip("Density of inland lakes/streams")]
     [Range(0f, 1f)]
-    public float inlandWaterStrength = 0.3f;
+    public float inlandWaterStrength = 0.12f;
+
+    [Tooltip("Minimum interior land lift above water level")]
+    [Range(0f, 0.35f)]
+    public float inlandLandLift = 0.1f;
 
     [Header("Island Shape")]
     [Range(1f, 5f)]
@@ -163,7 +167,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         for (int i = 0; i < lakeCenters.Length; i++)
         {
             float angle = Random.Range(0f, Mathf.PI * 2f);
-            float radius = Random.Range(0.14f, 0.48f);
+            float radius = Random.Range(0.16f, 0.42f);
             lakeCenters[i] = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
         }
 
@@ -229,6 +233,8 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float maskCore = Mathf.Clamp01(1f - Mathf.Pow(dist, islandFalloff));
                 float mask = Mathf.SmoothStep(-0.05f, 1f, maskCore);
 
+                float oceanEdge = Mathf.SmoothStep(oceanStart, 1f, dist);
+
                 float compressed = Mathf.Lerp(combined, Mathf.Sqrt(combined), heightCompression);
                 float height01 = compressed * mask;
 
@@ -241,25 +247,31 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float shoreEase = Mathf.SmoothStep(0f, coastShelfWidth * 1.35f, mask);
                 height01 = Mathf.Lerp(Mathf.Max(height01, waterLevel + coastShelfHeight * 0.7f), height01, shoreEase);
 
+                // Keep interior terrain safely above sea level (prevents all-water worlds).
+                float interiorMask = Mathf.SmoothStep(0.2f, 0.92f, mask) * (1f - oceanEdge);
+                float interiorFloor = waterLevel + inlandLandLift;
+                height01 = Mathf.Max(height01, Mathf.Lerp(waterLevel, interiorFloor, interiorMask));
+
                 // Force true island ocean ring around edges.
-                float oceanEdge = Mathf.SmoothStep(oceanStart, 1f, dist);
                 height01 = Mathf.Lerp(height01, waterLevel - oceanDepth, oceanEdge);
 
                 // Add sparse inland lakes / stream-like depressions.
                 float channel = Mathf.PerlinNoise(ox6 + nx * 9f, oz6 + nz * 9f);
-                float streamMask = 1f - Mathf.SmoothStep(0.48f, 0.56f, channel);
+                float streamBand = 1f - Mathf.SmoothStep(0f, 0.035f, Mathf.Abs(channel - 0.5f));
+                float streamMask = streamBand * 0.35f;
+
                 float lakeMask = 0f;
                 for (int i = 0; i < lakeCenters.Length; i++)
                 {
                     float lx = nx - 0.5f - lakeCenters[i].x;
                     float lz = nz - 0.5f - lakeCenters[i].y;
                     float lakeDist = Mathf.Sqrt(lx * lx + lz * lz);
-                    lakeMask = Mathf.Max(lakeMask, 1f - Mathf.SmoothStep(0.05f, 0.16f, lakeDist));
+                    lakeMask = Mathf.Max(lakeMask, 1f - Mathf.SmoothStep(0.045f, 0.11f, lakeDist));
                 }
 
-                float inlandMask = Mathf.Clamp01((streamMask * 0.55f + lakeMask) * inlandWaterStrength);
-                float inlandAllowed = Mathf.SmoothStep(0.2f, 0.75f, mask) * (1f - oceanEdge);
-                float inlandWaterLevel = waterLevel + coastShelfHeight * 0.25f;
+                float inlandMask = Mathf.Clamp01((streamMask + lakeMask) * inlandWaterStrength);
+                float inlandAllowed = Mathf.SmoothStep(0.35f, 0.9f, mask) * (1f - oceanEdge);
+                float inlandWaterLevel = waterLevel + 0.015f;
                 height01 = Mathf.Lerp(height01, inlandWaterLevel, inlandMask * inlandAllowed);
 
                 heights[z, x] = height01 * terrainHeight;
