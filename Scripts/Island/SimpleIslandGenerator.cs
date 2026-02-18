@@ -6,9 +6,9 @@ using UnityEngine;
 public class SimpleIslandGenerator : MonoBehaviour
 {
     [Header("Island Size")]
-    public int terrainSize = 280;
+    public int terrainSize = 620;
     public float terrainHeight = 20f;
-    public int resolution = 220;
+    public int resolution = 320;
 
     [Header("Generation")]
     public bool randomizeSeedOnStart = true;
