@@ -24,6 +24,15 @@ public class SimpleIslandGenerator : MonoBehaviour
     [Range(0f, 1f)] public float ridgeStrength = 0.34f;
     [Range(0f, 0.9f)] public float heightCompression = 0.55f;
 
+
+    [Header("Legacy Compatibility")]
+    [Tooltip("Legacy field kept for scene builder compatibility; used as ridge frequency when > 0")]
+    public float ridgeNoiseScale = 0f;
+    [Tooltip("Legacy field kept for compatibility; remapped to flatland strength")]
+    [Range(0f, 1f)] public float flatness = 0.62f;
+    [Tooltip("Optional terracing. 0 = disabled")]
+    [Range(0, 20)] public int terraceSteps = 0;
+
     [Header("Island Shape")]
     [Range(1.4f, 5f)] public float islandFalloff = 2.8f;
     [Range(0.55f, 0.95f)] public float oceanStart = 0.84f;
@@ -140,12 +149,14 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float baseShape = Fbm(nx, nz, baseNoiseScale, 4, 0.5f, oBase);
                 float hills = Fbm(nx, nz, hillNoiseScale, 3, 0.5f, oHill);
                 float mountains = Fbm(nx, nz, mountainNoiseScale, 3, 0.55f, oMountain);
-                float ridges = Ridged(nx, nz, mountainNoiseScale * 0.72f, oRidge);
+                float ridgeFrequency = ridgeNoiseScale > 0.01f ? ridgeNoiseScale : mountainNoiseScale * 0.72f;
+                float ridges = Ridged(nx, nz, ridgeFrequency, oRidge);
 
                 float flatMask = 1f - Mathf.SmoothStep(0.28f, 0.62f, dist);
                 float mountainRingMask = Mathf.SmoothStep(0.42f, 0.8f, dist) * (1f - Mathf.SmoothStep(0.86f, 1.03f, dist));
 
-                float plains = Mathf.Lerp(baseShape, Mathf.Pow(baseShape, 1.65f), flatlandStrength);
+                float runtimeFlatness = Mathf.Clamp01((flatlandStrength + flatness) * 0.5f);
+                float plains = Mathf.Lerp(baseShape, Mathf.Pow(baseShape, 1.65f), runtimeFlatness);
                 float hillMix = hills * hillStrength;
                 float mountainMix = (mountains * 0.85f + ridges * ridgeStrength) * mountainStrength * mountainRingMask;
 
@@ -154,11 +165,19 @@ public class SimpleIslandGenerator : MonoBehaviour
                 height01 += mountainMix;
 
                 // Preserve broad flat buildable interior areas.
-                float centerPlateau = Mathf.SmoothStep(0f, 0.45f, flatMask) * flatlandStrength;
+                float centerPlateau = Mathf.SmoothStep(0f, 0.45f, flatMask) * runtimeFlatness;
                 height01 = Mathf.Lerp(height01, Mathf.Max(height01, waterLevel + inlandLandLift * 1.2f), centerPlateau * 0.85f);
 
                 // Height compression keeps slopes traversable while retaining variation.
                 height01 = Mathf.Clamp01(Mathf.Lerp(height01, Mathf.Sqrt(Mathf.Clamp01(height01)), heightCompression));
+
+                if (terraceSteps > 0)
+                {
+                    float t = height01 * terraceSteps;
+                    float stepped = Mathf.Floor(t) / terraceSteps;
+                    height01 = Mathf.Lerp(height01, stepped, 0.32f);
+                }
+
                 height01 *= islandMask;
 
                 // Carve 1-2 rivers that flow outward.
