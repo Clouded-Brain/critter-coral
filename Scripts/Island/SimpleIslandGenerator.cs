@@ -59,10 +59,22 @@ public class SimpleIslandGenerator : MonoBehaviour
     private GameObject waterObj;
     private float[,] heightmap;
 
+
+    void ApplyRuntimeWaterSafety()
+    {
+        // Existing scene instances can keep old serialized values; enforce safe runtime water bounds.
+        waterLevel = Mathf.Min(waterLevel, 0.006f);
+        waterPlaneYOffset = Mathf.Min(waterPlaneYOffset, -3.0f);
+        oceanDepth = Mathf.Clamp(oceanDepth, 0.18f, 0.28f);
+    }
+
     void Start()
     {
+        ApplyRuntimeWaterSafety();
         if (randomizeSeedOnStart)
             seed = Random.Range(int.MinValue, int.MaxValue);
+
+        Debug.Log($"🐚 Water tuning runtime: level={waterLevel}, offset={waterPlaneYOffset}, depth={oceanDepth}");
 
         Debug.Log("🐚 IslandGenerator: Starting generation...");
         try
