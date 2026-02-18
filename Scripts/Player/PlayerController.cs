@@ -9,7 +9,7 @@ public class PlayerController : MonoBehaviour
     [Header("Movement")]
     public float moveSpeed = 12f;
     public float rotationSpeed = 10f;
-    public float acceleration = 60f;
+    public float acceleration = 80f;
     public float sprintMultiplier = 1.8f;
 
     [Header("Isometric")]
@@ -37,9 +37,16 @@ public class PlayerController : MonoBehaviour
 
     [Header("Slope Handling")]
     [Tooltip("Max slope angle the player can walk up (degrees)")]
-    public float maxSlopeAngle = 55f;
+    public float maxSlopeAngle = 60f;
     [Tooltip("Extra push force applied when going uphill")]
-    public float slopeAssistForce = 15f;
+    public float slopeAssistForce = 28f;
+
+    [Tooltip("How much horizontal speed is retained while climbing (1 = full speed)")]
+    [Range(0.4f, 1f)]
+    public float uphillSpeedRetention = 0.85f;
+
+    [Tooltip("Additional forward pull when climbing slopes")]
+    public float uphillForwardAssist = 16f;
 
     [Header("Ground Check")]
     public float groundCheckRadius = 0.4f;
@@ -140,7 +147,11 @@ public class PlayerController : MonoBehaviour
                 ? Vector3.ProjectOnPlane(moveDirection, groundNormal).normalized
                 : moveDirection;
 
-            Vector3 target = dir * speed;
+            float slopeAngle = isGrounded ? Vector3.Angle(groundNormal, Vector3.up) : 0f;
+            float climbFactor = Mathf.InverseLerp(8f, maxSlopeAngle, slopeAngle);
+            float retainedSpeed = Mathf.Lerp(1f, uphillSpeedRetention, climbFactor);
+
+            Vector3 target = dir * speed * retainedSpeed;
             target.y = rb.linearVelocity.y;
 
             Vector3 delta = target - rb.linearVelocity;
@@ -170,17 +181,21 @@ public class PlayerController : MonoBehaviour
             Vector3 slopeDown = Vector3.ProjectOnPlane(Vector3.down, groundNormal).normalized;
             float uphill = Vector3.Dot(moveDirection.normalized, -slopeDown);
 
-            if (uphill > 0.1f)
+            if (uphill > 0.05f)
             {
-                float assist = slopeAssistForce * uphill * (angle / maxSlopeAngle);
+                float angleFactor = Mathf.InverseLerp(5f, maxSlopeAngle, angle);
+                float assist = slopeAssistForce * uphill * angleFactor;
                 rb.AddForce(Vector3.up * assist, ForceMode.Acceleration);
+
+                Vector3 uphillDir = Vector3.ProjectOnPlane(moveDirection, groundNormal).normalized;
+                rb.AddForce(uphillDir * uphillForwardAssist * uphill * angleFactor, ForceMode.Acceleration);
             }
         }
 
         // Stick to ground going downhill (prevents bouncing off terrain)
         if (angle > 2f && rb.linearVelocity.y > -0.1f && rb.linearVelocity.y < 1f)
         {
-            rb.AddForce(-groundNormal * 5f, ForceMode.Acceleration);
+            rb.AddForce(-groundNormal * 8f, ForceMode.Acceleration);
         }
     }
 

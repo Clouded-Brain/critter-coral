@@ -10,7 +10,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 {
     [Header("Island Size")]
     public int terrainSize = 200;
-    public float terrainHeight = 18f;
+    public float terrainHeight = 14f;
     public int resolution = 200;
 
     [Header("Terrain Style")]
@@ -28,40 +28,40 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Tooltip("Threshold for hilly regions (higher = more flats)")]
     [Range(0.35f, 0.75f)]
-    public float hillThreshold = 0.56f;
+    public float hillThreshold = 0.62f;
 
     [Tooltip("How much of the terrain is flat meadow vs hills (0=all hills, 1=all flat)")]
     [Range(0f, 0.8f)]
-    public float flatness = 0.55f;
+    public float flatness = 0.72f;
 
     [Tooltip("How sharp ridges/cliffs are (higher = more dramatic)")]
     [Range(0f, 1f)]
-    public float ridgeStrength = 0.1f;
+    public float ridgeStrength = 0.05f;
 
     [Tooltip("Number of terrace steps (0 = smooth, 6-12 = Valheim-like stepping)")]
     [Range(0, 20)]
-    public int terraceSteps = 1;
+    public int terraceSteps = 0;
 
     [Tooltip("Extra smoothing pass on generated heights")]
     [Range(0f, 1f)]
-    public float smoothingStrength = 0.65f;
+    public float smoothingStrength = 0.78f;
 
     [Tooltip("How many smoothing passes to run")]
     [Range(0, 6)]
-    public int smoothingIterations = 4;
+    public int smoothingIterations = 5;
 
     [Tooltip("Compresses extreme height differences while preserving shape")]
     [Range(0f, 0.8f)]
-    public float heightCompression = 0.65f;
+    public float heightCompression = 0.75f;
 
 
     [Tooltip("Extra low-elevation shelf near the shore (as % of terrain height)")]
     [Range(0f, 0.25f)]
-    public float coastShelfHeight = 0.08f;
+    public float coastShelfHeight = 0.12f;
 
     [Tooltip("How wide the gentle coastal shelf is")]
     [Range(0.05f, 0.45f)]
-    public float coastShelfWidth = 0.22f;
+    public float coastShelfWidth = 0.34f;
 
     [Header("Island Shape")]
     [Range(1f, 5f)]
@@ -164,28 +164,28 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float hillMask = Mathf.SmoothStep(hillThreshold - 0.14f, hillThreshold + 0.14f, biomeRegion);
 
                 // Apply flatness stronger in meadows, lighter in hilly zones.
-                float meadowBase = Mathf.Pow(baseNoise, 1.55f + flatness * 3.1f);
-                float hillBase = Mathf.Pow(baseNoise, 1.05f + flatness * 1.1f);
+                float meadowBase = Mathf.Pow(baseNoise, 1.9f + flatness * 3.6f);
+                float hillBase = Mathf.Pow(baseNoise, 1.2f + flatness * 1.35f);
                 baseNoise = Mathf.Lerp(meadowBase, hillBase, hillMask);
 
                 // ── 2. RIDGE NOISE — creates cliff edges and ridgelines ──
                 float ridgeRaw = Mathf.PerlinNoise(ox2 + nx * ridgeNoiseScale, oz2 + nz * ridgeNoiseScale);
                 float ridge = 1f - Mathf.Abs(ridgeRaw - 0.5f) * 2f;
                 ridge = Mathf.Pow(ridge, 3f);
-                ridge *= ridgeStrength * Mathf.Lerp(0.08f, 0.75f, hillMask);
+                ridge *= ridgeStrength * Mathf.Lerp(0.03f, 0.5f, hillMask);
 
                 // ── 3. DETAIL NOISE — small bumps and roughness ──
                 float detail = Mathf.PerlinNoise(ox3 + nx * detailNoiseScale, oz3 + nz * detailNoiseScale);
-                detail = (detail - 0.5f) * Mathf.Lerp(0.005f, 0.02f, hillMask);
+                detail = (detail - 0.5f) * Mathf.Lerp(0.002f, 0.012f, hillMask);
 
                 // ── 4. BIOME VARIATION — occasional raised hill groups ──
                 float plateauNoise = Mathf.PerlinNoise(ox5 + nx * 3f, oz5 + nz * 3f);
-                float biomeBoost = Mathf.Max(0f, plateauNoise - 0.67f) * 0.35f * hillMask;
+                float biomeBoost = Mathf.Max(0f, plateauNoise - 0.72f) * 0.2f * hillMask;
 
                 // ── 5. COMBINE ──
                 float combined = baseNoise + ridge + detail + biomeBoost;
-                combined = Mathf.Clamp01(Mathf.InverseLerp(0.06f, 1.1f, combined));
-                combined = Mathf.Lerp(combined, Mathf.SmoothStep(0f, 1f, combined), 0.6f);
+                combined = Mathf.Clamp01(Mathf.InverseLerp(0.08f, 1.05f, combined));
+                combined = Mathf.Lerp(combined, Mathf.SmoothStep(0f, 1f, combined), 0.8f);
 
                 // ── 6. TERRACING — Valheim-like stepped terrain ──
                 if (terraceSteps > 0)
@@ -210,6 +210,10 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float coastalFloor = waterLevel + coastShelfHeight;
                 float coastHeight = Mathf.Max(height01, coastalFloor);
                 height01 = Mathf.Lerp(coastHeight, height01, coastBlend);
+
+                // Additional near-shore easing to reduce steep declines into water.
+                float shoreEase = Mathf.SmoothStep(0f, coastShelfWidth * 1.35f, mask);
+                height01 = Mathf.Lerp(Mathf.Max(height01, waterLevel + coastShelfHeight * 0.7f), height01, shoreEase);
 
                 heights[z, x] = height01 * terrainHeight;
             }
