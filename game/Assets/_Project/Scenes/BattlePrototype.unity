@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_Name: BattlePrototypeRoot
+--- !u!4 &5001
+Transform:
+  m_ObjectHideFlags: 0
+  m_GameObject: {fileID: 5000}
+--- !u!1 &6000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_Name: Main Camera
+--- !u!20 &6001
+Camera:
+  m_ObjectHideFlags: 0
+  m_GameObject: {fileID: 6000}
+  m_Orthographic: 0
+  m_FieldOfView: 45
