@@ -16,23 +16,19 @@ namespace CoralCritter
         [SerializeField] private float playerHeight = 2f;
         [SerializeField] private float playerRadius = 0.4f;
 
-        [Header("Camera")]
-        [SerializeField] private Vector3 cameraStartPosition = new(0f, 22f, -18f);
-
         [Header("Island")]
         [SerializeField] private int seed = 1337;
+        [SerializeField] private float spawnHeightProbe = 80f;
+        [SerializeField] private float spawnSurfacePadding = 0.2f;
 
         [ContextMenu("Create/Refresh Test Setup")]
         public void CreateOrRefreshSetup()
         {
-            var player = EnsurePlayer();
-            var camera = EnsureCamera(player.transform);
             EnsureIslandGenerator();
+            var player = EnsurePlayer();
+            MovePlayerToSurface(player);
 
-            if (camera != null)
-            {
-                camera.transform.position = cameraStartPosition;
-            }
+            EnsureCamera(player.transform);
         }
 
         private GameObject EnsurePlayer()
@@ -95,6 +91,7 @@ namespace CoralCritter
             {
                 camera = existingCamera;
                 camera.gameObject.name = "Main Camera";
+                camera.tag = "MainCamera";
             }
 
             var iso = camera.GetComponent<IsometricCameraController>();
@@ -116,7 +113,7 @@ namespace CoralCritter
             return camera;
         }
 
-        private void EnsureIslandGenerator()
+        private IslandSeedPresetGenerator EnsureIslandGenerator()
         {
             var islandObject = GameObject.Find("IslandGenerator");
             if (islandObject == null)
@@ -136,6 +133,26 @@ namespace CoralCritter
 #if UNITY_EDITOR
             EditorUtility.SetDirty(generator);
 #endif
+            return generator;
+        }
+
+        private void MovePlayerToSurface(GameObject player)
+        {
+            var characterController = player.GetComponent<CharacterController>();
+            if (characterController == null)
+            {
+                return;
+            }
+
+            var probeStart = new Vector3(playerSpawn.x, spawnHeightProbe, playerSpawn.z);
+            if (Physics.Raycast(probeStart, Vector3.down, out var hit, spawnHeightProbe * 2f))
+            {
+                var groundedY = hit.point.y + characterController.height * 0.5f + spawnSurfacePadding;
+                player.transform.position = new Vector3(playerSpawn.x, groundedY, playerSpawn.z);
+                return;
+            }
+
+            player.transform.position = playerSpawn;
         }
     }
 }

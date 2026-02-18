@@ -63,11 +63,17 @@ This auto-creates:
 ## Troubleshooting
 - **Camera does not follow player:**
   - Re-run `PrototypeSceneSetup -> Create/Refresh Test Setup` while NOT in Play mode.
-  - Confirm `Main Camera` has `IsometricCameraController`; it now auto-binds to a `Player` object if target is empty.
+  - Confirm `Main Camera` has `IsometricCameraController`; it now snaps to player immediately when target is assigned.
 - **Player does not move:**
-  - Movement reads direct keyboard keys (WASD/Arrow keys + Shift), so it works with either legacy or new Input System project settings.
+  - Click inside the Game view once so Unity captures keyboard focus.
+  - Movement reads keyboard input for both Input System and Legacy Input Manager modes.
 - **Terrain is pink:**
   - The generator now creates fallback materials automatically and prefers URP shaders.
   - If pink persists, verify URP package import completed and re-run `Generate`.
 - **Player falls through map:**
   - The generated island now includes a `MeshCollider`; re-run setup if scene was created before this update.
+
+- **Player spawns inside terrain:**
+  - `PrototypeSceneSetup` now raycasts the generated island and places the player above surface height. Re-run `Create/Refresh Test Setup` to re-place the player.
+- **No gravity / player floats:**
+  - Verify the `Player` object has a `CharacterController` and `PlayerMovementController`. Gravity is applied every frame when not grounded.

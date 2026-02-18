@@ -12,6 +12,7 @@ namespace CoralCritter
         [SerializeField] private bool autoFindPlayerTarget = true;
         [SerializeField] private Vector3 offset = new(0f, 18f, -16f);
         [SerializeField] private float followSmooth = 8f;
+        [SerializeField] private bool snapToTargetOnBind = true;
         [SerializeField] private float minZoom = 35f;
         [SerializeField] private float maxZoom = 55f;
         [SerializeField] private float zoomSpeed = 5f;
@@ -26,6 +27,10 @@ namespace CoralCritter
             _camera = GetComponent<Camera>();
             transform.rotation = Quaternion.Euler(eulerViewAngle);
             TryAutoBindTarget();
+            if (target != null && snapToTargetOnBind)
+            {
+                SnapToTarget();
+            }
         }
 
         private void LateUpdate()
@@ -40,7 +45,14 @@ namespace CoralCritter
             }
 
             var desiredPosition = target.position + offset;
-            transform.position = Vector3.Lerp(transform.position, desiredPosition, followSmooth * Time.deltaTime);
+            if (followSmooth <= 0f)
+            {
+                transform.position = desiredPosition;
+            }
+            else
+            {
+                transform.position = Vector3.Lerp(transform.position, desiredPosition, followSmooth * Time.deltaTime);
+            }
 
             var scroll = Input.mouseScrollDelta.y;
             if (Mathf.Abs(scroll) > Mathf.Epsilon)
@@ -52,6 +64,17 @@ namespace CoralCritter
         public void SetTarget(Transform nextTarget)
         {
             target = nextTarget;
+            if (target != null && snapToTargetOnBind)
+            {
+                SnapToTarget();
+            }
+        }
+
+
+        private void SnapToTarget()
+        {
+            transform.rotation = Quaternion.Euler(eulerViewAngle);
+            transform.position = target.position + offset;
         }
 
         private void TryAutoBindTarget()
@@ -65,6 +88,11 @@ namespace CoralCritter
             if (playerByName != null)
             {
                 target = playerByName.transform;
+                if (snapToTargetOnBind)
+                {
+                    SnapToTarget();
+                }
+
                 return;
             }
 
@@ -72,6 +100,10 @@ namespace CoralCritter
             if (playerByTag != null)
             {
                 target = playerByTag.transform;
+                if (snapToTargetOnBind)
+                {
+                    SnapToTarget();
+                }
             }
         }
     }

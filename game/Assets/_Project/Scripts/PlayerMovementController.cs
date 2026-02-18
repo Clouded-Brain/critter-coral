@@ -78,11 +78,21 @@ namespace CoralCritter
                     Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed);
             }
 #endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            var axisInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+            if (axisInput.sqrMagnitude > 0.01f)
+            {
+                return axisInput;
+            }
+
             return ReadKeyboardVector(
                 Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow),
                 Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow),
                 Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow),
                 Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow));
+#else
+            return Vector2.zero;
+#endif
         }
 
         private static bool ReadSprintInput()
@@ -93,7 +103,11 @@ namespace CoralCritter
                 return Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed;
             }
 #endif
+#if ENABLE_LEGACY_INPUT_MANAGER
             return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+#else
+            return false;
+#endif
         }
 
         private static Vector2 ReadKeyboardVector(bool left, bool right, bool down, bool up)
