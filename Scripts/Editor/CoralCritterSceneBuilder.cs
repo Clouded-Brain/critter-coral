@@ -228,9 +228,9 @@ public class CoralCritterSceneBuilder : EditorWindow
         GameObject islandGenObj = new GameObject("IslandGenerator");
 
         SimpleIslandGenerator gen = islandGenObj.AddComponent<SimpleIslandGenerator>();
-        gen.terrainSize = 520;
+        gen.terrainSize = 980;
         gen.terrainHeight = 25f;
-        gen.resolution = 280;
+        gen.resolution = 360;
         gen.islandFalloff = 2.5f;
         gen.baseNoiseScale = 8f;
         gen.ridgeNoiseScale = 15f;

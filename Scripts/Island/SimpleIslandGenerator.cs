@@ -6,9 +6,9 @@ using UnityEngine;
 public class SimpleIslandGenerator : MonoBehaviour
 {
     [Header("Island Size")]
-    public int terrainSize = 620;
+    public int terrainSize = 1240;
     public float terrainHeight = 20f;
-    public int resolution = 320;
+    public int resolution = 420;
 
     [Header("Generation")]
     public bool randomizeSeedOnStart = true;
@@ -133,6 +133,20 @@ public class SimpleIslandGenerator : MonoBehaviour
             riverEnd[i] = new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * Random.Range(0.78f, 0.92f);
         }
 
+        // Guaranteed macro landforms: one major mountain + two notable hills.
+        Vector2 mainMountainCenter = Random.insideUnitCircle.normalized * Random.Range(0.26f, 0.48f);
+        float mainMountainRadius = Random.Range(0.18f, 0.26f);
+
+        Vector2[] hillCenters = new Vector2[2];
+        float[] hillRadii = new float[2];
+        for (int i = 0; i < hillCenters.Length; i++)
+        {
+            float angle = Random.Range(0f, Mathf.PI * 2f);
+            float radius = Random.Range(0.14f, 0.38f);
+            hillCenters[i] = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+            hillRadii[i] = Random.Range(0.10f, 0.17f);
+        }
+
         for (int z = 0; z <= resolution; z++)
         {
             for (int x = 0; x <= resolution; x++)
@@ -160,9 +174,19 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float hillMix = hills * hillStrength;
                 float mountainMix = (mountains * 0.85f + ridges * ridgeStrength) * mountainStrength * mountainRingMask;
 
+                float bigMountain = 1f - Mathf.SmoothStep(mainMountainRadius * 0.35f, mainMountainRadius, Vector2.Distance(p, mainMountainCenter));
+                bigMountain = Mathf.Pow(Mathf.Clamp01(bigMountain), 1.35f) * 0.62f;
+
+                float hillsMacro = 0f;
+                for (int i = 0; i < hillCenters.Length; i++)
+                {
+                    float hill = 1f - Mathf.SmoothStep(hillRadii[i] * 0.45f, hillRadii[i], Vector2.Distance(p, hillCenters[i]));
+                    hillsMacro = Mathf.Max(hillsMacro, hill * 0.22f);
+                }
+
                 float height01 = plains;
                 height01 = Mathf.Lerp(height01, height01 * 0.78f + hillMix * 0.55f, 1f - flatMask * 0.92f);
-                height01 += mountainMix;
+                height01 += mountainMix + hillsMacro + bigMountain * mountainRingMask;
 
                 // Preserve broad flat buildable interior areas.
                 float centerPlateau = Mathf.SmoothStep(0f, 0.45f, flatMask) * runtimeFlatness;
@@ -363,22 +387,22 @@ public class SimpleIslandGenerator : MonoBehaviour
             float slopeAngle = Vector3.Angle(normals[i], Vector3.up);
 
             Color vertColor;
-            if (height < waterWorldH + 0.8f)
+            if (height < waterWorldH + 0.6f)
             {
                 vertColor = sandColor;
             }
-            else if (slopeAngle > 42f)
+            else if (slopeAngle > 52f)
             {
                 vertColor = rockColor;
             }
-            else if (slopeAngle > 22f)
+            else if (slopeAngle > 30f)
             {
-                float t = (slopeAngle - 22f) / 20f;
+                float t = (slopeAngle - 30f) / 22f;
                 vertColor = Color.Lerp(dirtColor, rockColor, t);
             }
             else
             {
-                float t = slopeAngle / 22f;
+                float t = slopeAngle / 30f;
                 vertColor = Color.Lerp(grassColor, dirtColor, t);
             }
 
