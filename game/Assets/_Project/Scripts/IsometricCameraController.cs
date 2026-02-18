@@ -3,8 +3,9 @@ using UnityEngine;
 namespace CoralCritter
 {
     /// <summary>
-    /// Locked-angle isometric camera with constrained zoom for early prototype readability.
+    /// CC-002: Locked-angle isometric camera with constrained zoom and optional occlusion support.
     /// </summary>
+    [RequireComponent(typeof(Camera))]
     public class IsometricCameraController : MonoBehaviour
     {
         [SerializeField] private Transform target;
@@ -13,13 +14,16 @@ namespace CoralCritter
         [SerializeField] private float minZoom = 35f;
         [SerializeField] private float maxZoom = 55f;
         [SerializeField] private float zoomSpeed = 5f;
+        [SerializeField] private Vector3 eulerViewAngle = new(35f, 45f, 0f);
 
         private Camera _camera;
+
+        public Transform Target => target;
 
         private void Awake()
         {
             _camera = GetComponent<Camera>();
-            transform.rotation = Quaternion.Euler(35f, 45f, 0f);
+            transform.rotation = Quaternion.Euler(eulerViewAngle);
         }
 
         private void LateUpdate()
@@ -29,19 +33,19 @@ namespace CoralCritter
                 return;
             }
 
-            var desired = target.position + offset;
-            transform.position = Vector3.Lerp(transform.position, desired, followSmooth * Time.deltaTime);
-
-            if (_camera == null)
-            {
-                return;
-            }
+            var desiredPosition = target.position + offset;
+            transform.position = Vector3.Lerp(transform.position, desiredPosition, followSmooth * Time.deltaTime);
 
             var scroll = Input.mouseScrollDelta.y;
-            if (Mathf.Abs(scroll) > 0f)
+            if (Mathf.Abs(scroll) > Mathf.Epsilon)
             {
                 _camera.fieldOfView = Mathf.Clamp(_camera.fieldOfView - scroll * zoomSpeed, minZoom, maxZoom);
             }
+        }
+
+        public void SetTarget(Transform nextTarget)
+        {
+            target = nextTarget;
         }
     }
 }

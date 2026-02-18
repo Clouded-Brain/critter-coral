@@ -24,3 +24,23 @@ Use Unity Editor version:
 3. Let Unity generate `Library/` and local artifacts.
 4. Start in `Assets/_Project/Scenes/Bootstrap.unity`.
 5. Follow `docs/MVP_BACKLOG.md` and `docs/SPIKE_48H.md` for implementation order.
+
+
+## First Implementation Steps (CC-001, CC-002, CC-003)
+1. Open `Assets/_Project/Scenes/IslandPrototype.unity`.
+2. Create `Player` GameObject:
+   - Add `CharacterController`.
+   - Add `PlayerMovementController`.
+3. Select `Main Camera`:
+   - Add `IsometricCameraController`.
+   - Add `CameraOcclusionController`.
+   - Drag the `Player` transform into the `IsometricCameraController.target` field.
+4. Create `IslandGenerator` empty GameObject:
+   - Add `IslandSeedPresetGenerator`.
+   - Assign temporary terrain/water materials.
+   - Click the component context menu `Generate`.
+5. Press Play and validate:
+   - WASD move + Shift sprint.
+   - Scroll wheel zoom constraints.
+   - Player remains readable behind blockers.
+   - Island shape is stable across runs with same seed value.
