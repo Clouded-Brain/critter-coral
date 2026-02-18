@@ -6,8 +6,8 @@ using UnityEngine;
 public class SimpleIslandGenerator : MonoBehaviour
 {
     [Header("Island Size")]
-    public int terrainSize = 690;
-    public float terrainHeight = 26f;
+    public int terrainSize = 725;
+    public float terrainHeight = 40f;
     public int resolution = 300;
 
     [Header("Generation")]
@@ -22,7 +22,7 @@ public class SimpleIslandGenerator : MonoBehaviour
     [Range(0f, 1f)] public float hillStrength = 0.72f;
     [Range(0f, 1f)] public float mountainStrength = 0.92f;
     [Range(0f, 1f)] public float ridgeStrength = 0.34f;
-    [Range(0f, 0.9f)] public float heightCompression = 0.55f;
+    [Range(0f, 0.9f)] public float heightCompression = 0.22f;
 
 
     [Header("Legacy Compatibility")]
@@ -41,13 +41,13 @@ public class SimpleIslandGenerator : MonoBehaviour
     [Header("Water")]
     [Range(0f, 0.45f)] public float waterLevel = 0.06f;
     public float waterPlaneYOffset = 0f;
-    [Range(0f, 1f)] public float inlandWaterStrength = 0.27f;
+    [Range(0f, 1f)] public float inlandWaterStrength = 0.36f;
     [Range(0f, 0.35f)] public float inlandLandLift = 0.1f;
     public Color waterColor = new Color(0.08f, 0.35f, 0.6f, 0.75f);
 
     [Header("Smoothing")]
-    [Range(0f, 1f)] public float smoothingStrength = 0.48f;
-    [Range(0, 6)] public int smoothingIterations = 3;
+    [Range(0f, 1f)] public float smoothingStrength = 0.34f;
+    [Range(0, 6)] public int smoothingIterations = 2;
 
     [Header("Terrain Colors (auto-painted by slope)")]
     public Color grassColor = new Color(0.22f, 0.45f, 0.12f);
@@ -114,11 +114,11 @@ public class SimpleIslandGenerator : MonoBehaviour
         Vector2 oRidge = new Vector2(Random.value * 10000f, Random.value * 10000f);
         Vector2 oRiver = new Vector2(Random.value * 10000f, Random.value * 10000f);
 
-        Vector2[] lakeCenters = new Vector2[8];
+        Vector2[] lakeCenters = new Vector2[12];
         for (int i = 0; i < lakeCenters.Length; i++)
         {
             float angle = Random.Range(0f, Mathf.PI * 2f);
-            float radius = Random.Range(0.14f, 0.42f);
+            float radius = Random.Range(0.12f, 0.46f);
             lakeCenters[i] = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
         }
 
@@ -129,7 +129,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         {
             float a0 = Random.Range(0f, Mathf.PI * 2f);
             float a1 = a0 + Random.Range(-0.8f, 0.8f);
-            riverStart[i] = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * Random.Range(0.18f, 0.35f);
+            riverStart[i] = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * Random.Range(0.12f, 0.32f);
             riverEnd[i] = new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * Random.Range(0.78f, 0.92f);
         }
 
@@ -148,8 +148,8 @@ public class SimpleIslandGenerator : MonoBehaviour
         }
 
         // Guaranteed macro landforms: one major mountain + two notable hills.
-        Vector2 mainMountainCenter = Random.insideUnitCircle.normalized * Random.Range(0.18f, 0.40f);
-        float mainMountainRadius = Random.Range(0.26f, 0.34f);
+        Vector2 mainMountainCenter = Random.insideUnitCircle.normalized * Random.Range(0.12f, 0.34f);
+        float mainMountainRadius = Random.Range(0.22f, 0.3f);
 
         Vector2[] hillCenters = new Vector2[2];
         float[] hillRadii = new float[2];
@@ -171,13 +171,15 @@ public class SimpleIslandGenerator : MonoBehaviour
 
                 float dist = p.magnitude * 2f;
                 float coastNoise = Mathf.PerlinNoise(oRidge.x + nx * 5f, oRidge.y + nz * 5f);
-                float radialWarp = (coastNoise - 0.5f) * 0.22f;
+                float radialWarp = (coastNoise - 0.5f) * 0.34f;
                 float warpedDist = Mathf.Clamp(dist + radialWarp, 0f, 1.4f);
 
                 float islandMask = Mathf.Clamp01(1f - Mathf.Pow(warpedDist, islandFalloff));
                 islandMask = Mathf.SmoothStep(0f, 1f, islandMask);
                 float oceanRing = Mathf.SmoothStep(oceanStart, 1.04f, warpedDist);
-                float inletMask = Mathf.SmoothStep(0.68f, 0.98f, warpedDist) * Mathf.SmoothStep(0.62f, 0.86f, coastNoise);
+                float inletMask = Mathf.SmoothStep(0.62f, 0.96f, warpedDist) * Mathf.SmoothStep(0.55f, 0.9f, coastNoise);
+                float coastDetail = Mathf.PerlinNoise(oBase.x + nx * 17f, oBase.y + nz * 17f);
+                float coastNotchMask = Mathf.SmoothStep(0.64f, 1.02f, warpedDist) * Mathf.SmoothStep(0.58f, 0.95f, coastDetail);
 
                 float baseShape = Fbm(nx, nz, baseNoiseScale, 4, 0.5f, oBase);
                 float hills = Fbm(nx, nz, hillNoiseScale, 3, 0.5f, oHill);
@@ -186,25 +188,25 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float ridges = Ridged(nx, nz, ridgeFrequency, oRidge);
 
                 float flatMask = 1f - Mathf.SmoothStep(0.28f, 0.62f, dist);
-                float mountainRingMask = Mathf.SmoothStep(0.42f, 0.8f, dist) * (1f - Mathf.SmoothStep(0.86f, 1.03f, dist));
+                float mountainRingMask = Mathf.SmoothStep(0.3f, 0.78f, dist) * (1f - Mathf.SmoothStep(0.9f, 1.06f, dist));
 
                 float runtimeFlatness = Mathf.Clamp01((flatlandStrength + flatness) * 0.5f);
                 float plains = Mathf.Lerp(baseShape, Mathf.Pow(baseShape, 1.65f), runtimeFlatness);
                 float hillMix = hills * hillStrength;
-                float mountainMix = (mountains * 0.85f + ridges * ridgeStrength) * mountainStrength * mountainRingMask;
+                float mountainMix = (mountains * 1.35f + ridges * (ridgeStrength * 1.4f)) * mountainStrength * mountainRingMask;
 
                 float bigMountain = 1f - Mathf.SmoothStep(mainMountainRadius * 0.35f, mainMountainRadius, Vector2.Distance(p, mainMountainCenter));
-                bigMountain = Mathf.Pow(Mathf.Clamp01(bigMountain), 1.05f) * 1.35f;
+                bigMountain = Mathf.Pow(Mathf.Clamp01(bigMountain), 0.9f) * 2.3f;
 
                 float hillsMacro = 0f;
                 for (int i = 0; i < hillCenters.Length; i++)
                 {
                     float hill = 1f - Mathf.SmoothStep(hillRadii[i] * 0.45f, hillRadii[i], Vector2.Distance(p, hillCenters[i]));
-                    hillsMacro = Mathf.Max(hillsMacro, hill * 0.34f);
+                    hillsMacro = Mathf.Max(hillsMacro, hill * 0.62f);
                 }
 
                 float height01 = plains;
-                height01 = Mathf.Lerp(height01, height01 * 0.78f + hillMix * 0.55f, 1f - flatMask * 0.92f);
+                height01 = Mathf.Lerp(height01, height01 * 0.72f + hillMix * 0.72f, 1f - flatMask * 0.88f);
                 height01 += mountainMix + hillsMacro + bigMountain;
 
                 // Preserve broad flat buildable interior areas.
@@ -213,6 +215,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
                 // Height compression keeps slopes traversable while retaining variation.
                 height01 = Mathf.Clamp01(Mathf.Lerp(height01, Mathf.Sqrt(Mathf.Clamp01(height01)), heightCompression));
+                height01 = Mathf.Pow(height01, 0.9f);
 
                 if (terraceSteps > 0)
                 {
@@ -228,7 +231,7 @@ public class SimpleIslandGenerator : MonoBehaviour
                 for (int i = 0; i < riverCount; i++)
                 {
                     float d = DistanceToSegment(p, riverStart[i], riverEnd[i]);
-                    float width = Mathf.Lerp(0.012f, 0.03f, Mathf.InverseLerp(0.2f, 0.95f, dist));
+                    float width = Mathf.Lerp(0.016f, 0.038f, Mathf.InverseLerp(0.2f, 0.95f, dist));
                     float riverCore = 1f - Mathf.SmoothStep(width, width * 2.6f, d);
                     riverMask = Mathf.Max(riverMask, riverCore);
                 }
@@ -240,7 +243,7 @@ public class SimpleIslandGenerator : MonoBehaviour
                 for (int i = 0; i < streamStart.Length; i++)
                 {
                     float ds = DistanceToSegment(p, streamStart[i], streamEnd[i]);
-                    float streamCore = 1f - Mathf.SmoothStep(0.015f, 0.05f, ds);
+                    float streamCore = 1f - Mathf.SmoothStep(0.014f, 0.06f, ds);
                     streamMask = Mathf.Max(streamMask, streamCore);
                 }
 
@@ -249,19 +252,20 @@ public class SimpleIslandGenerator : MonoBehaviour
                 for (int i = 0; i < lakeCenters.Length; i++)
                 {
                     float ld = Vector2.Distance(p, lakeCenters[i]);
-                    lakeMask = Mathf.Max(lakeMask, 1f - Mathf.SmoothStep(0.05f, 0.16f, ld));
+                    lakeMask = Mathf.Max(lakeMask, 1f - Mathf.SmoothStep(0.045f, 0.18f, ld));
                 }
 
-                float inlandMask = Mathf.Clamp01((lakeMask + riverMask + streamMask) * inlandWaterStrength);
+                float inlandMask = Mathf.Clamp01((lakeMask + riverMask * 1.15f + streamMask * 1.2f) * inlandWaterStrength);
                 float inlandAllowed = Mathf.SmoothStep(0.16f, 0.82f, islandMask) * (1f - oceanRing);
-                float inlandWaterTarget = waterLevel + 0.01f;
+                float inlandWaterTarget = Mathf.Max(0f, waterLevel - 0.01f);
                 height01 = Mathf.Lerp(height01, inlandWaterTarget, inlandMask * inlandAllowed);
 
                 // Coastal inlets and cave-like alcoves for less round shorelines.
                 float caveNoise = Mathf.PerlinNoise(oMountain.x + nx * 18f, oMountain.y + nz * 18f);
-                float caveMask = Mathf.SmoothStep(0.74f, 1.02f, warpedDist) * Mathf.SmoothStep(0.80f, 0.96f, caveNoise);
-                height01 = Mathf.Lerp(height01, waterLevel + 0.004f, caveMask * 0.55f);
-                height01 = Mathf.Lerp(height01, waterLevel - oceanDepth * 0.55f, inletMask * 0.72f);
+                float caveMask = Mathf.SmoothStep(0.7f, 1.04f, warpedDist) * Mathf.SmoothStep(0.76f, 0.96f, caveNoise);
+                height01 = Mathf.Lerp(height01, waterLevel - 0.006f, caveMask * 0.62f);
+                height01 = Mathf.Lerp(height01, waterLevel - oceanDepth * 0.6f, inletMask * 0.78f);
+                height01 = Mathf.Lerp(height01, waterLevel - oceanDepth * 0.48f, coastNotchMask * 0.66f);
 
                 // Keep interior above water so the map is never "all water".
                 float interiorSafety = Mathf.SmoothStep(0.2f, 0.95f, islandMask) * (1f - oceanRing);
