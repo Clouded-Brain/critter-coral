@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Critter Coral</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>🐠 Critter Coral</h1>
+        <p>Track your little marine crew.</p>
+      </header>
+
+      <section class="card">
+        <h2>Add a critter</h2>
+        <form id="critter-form">
+          <label>
+            Name
+            <input id="name" name="name" required maxlength="40" placeholder="Nori" />
+          </label>
+          <label>
+            Species
+            <input id="species" name="species" required maxlength="40" placeholder="Clownfish" />
+          </label>
+          <label>
+            Mood
+            <select id="mood" name="mood">
+              <option>Curious</option>
+              <option>Sleepy</option>
+              <option>Hungry</option>
+              <option>Playful</option>
+              <option>Grumpy</option>
+            </select>
+          </label>
+          <button type="submit">Add critter</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="row">
+          <h2>Coral roster</h2>
+          <button id="clear" class="danger" type="button">Clear all</button>
+        </div>
+        <ul id="list" aria-live="polite"></ul>
+        <p id="empty-state" class="empty">No critters yet — add your first one!</p>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
