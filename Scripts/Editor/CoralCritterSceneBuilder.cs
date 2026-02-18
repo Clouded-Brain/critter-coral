@@ -129,13 +129,13 @@ public class CoralCritterSceneBuilder : EditorWindow
         controller.acceleration = 60f;
         controller.isoAngle = 45f;
         controller.sprintMultiplier = 1.8f;
-        controller.jumpForce = 10f;
-        controller.holdJumpForce = 18f;
-        controller.maxJumpHoldTime = 0.25f;
+        controller.jumpForce = 14.5f;
+        controller.holdJumpForce = 22f;
+        controller.maxJumpHoldTime = 0.22f;
         controller.gravityMultiplier = 3f;
         controller.fallMultiplier = 4f;
         controller.maxSlopeAngle = 55f;
-        controller.slopeAssistForce = 15f;
+        controller.slopeAssistForce = 28f;
 
         // ── Player Material (bright teal so it stands out) ──
         Renderer renderer = player.GetComponent<Renderer>();
@@ -228,9 +228,9 @@ public class CoralCritterSceneBuilder : EditorWindow
         GameObject islandGenObj = new GameObject("IslandGenerator");
 
         SimpleIslandGenerator gen = islandGenObj.AddComponent<SimpleIslandGenerator>();
-        gen.terrainSize = 980;
+        gen.terrainSize = 760;
         gen.terrainHeight = 25f;
-        gen.resolution = 360;
+        gen.resolution = 320;
         gen.islandFalloff = 2.5f;
         gen.baseNoiseScale = 8f;
         gen.ridgeNoiseScale = 15f;

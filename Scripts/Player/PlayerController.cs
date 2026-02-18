@@ -17,11 +17,11 @@ public class PlayerController : MonoBehaviour
     public float isoAngle = 45f;
 
     [Header("Jumping")]
-    public float jumpForce = 11.5f;
-    public float holdJumpForce = 16f;
+    public float jumpForce = 14.5f;
+    public float holdJumpForce = 22f;
     public float maxJumpHoldTime = 0.2f;
     public float jumpBufferTime = 0.2f;
-    public float coyoteTime = 0.16f;
+    public float coyoteTime = 0.22f;
 
     [Header("Gravity")]
     public float gravityMultiplier = 2.8f;
@@ -115,13 +115,12 @@ public class PlayerController : MonoBehaviour
 
     void CheckGround()
     {
-        float halfHeight = capsule != null
-            ? Mathf.Max(0.5f, capsule.height * Mathf.Abs(transform.localScale.y) * 0.5f)
-            : 1f;
+        Vector3 center = capsule != null ? capsule.bounds.center : transform.position + Vector3.up * 0.9f;
+        float extentsY = capsule != null ? capsule.bounds.extents.y : 1f;
 
-        float skin = 0.05f;
-        Vector3 origin = transform.position + Vector3.up * (halfHeight - groundCheckRadius - skin);
-        float castDistance = groundCheckDistance + groundCheckRadius + skin;
+        float skin = 0.08f;
+        Vector3 origin = center + Vector3.up * (groundCheckRadius + skin);
+        float castDistance = Mathf.Max(groundCheckDistance + extentsY + skin, 0.2f);
 
         RaycastHit[] hits = Physics.SphereCastAll(origin, groundCheckRadius, Vector3.down, castDistance, groundLayer, QueryTriggerInteraction.Ignore);
 
@@ -275,11 +274,10 @@ public class PlayerController : MonoBehaviour
     void OnDrawGizmosSelected()
     {
         Gizmos.color = isGrounded ? Color.green : Color.red;
-        float halfHeight = capsule != null
-            ? Mathf.Max(0.5f, capsule.height * Mathf.Abs(transform.localScale.y) * 0.5f)
-            : 1f;
-        Vector3 origin = transform.position + Vector3.up * (halfHeight - groundCheckRadius - 0.05f);
-        Vector3 pos = origin + Vector3.down * (groundCheckDistance + groundCheckRadius + 0.05f);
+        Vector3 center = capsule != null ? capsule.bounds.center : transform.position + Vector3.up * 0.9f;
+        float extentsY = capsule != null ? capsule.bounds.extents.y : 1f;
+        Vector3 origin = center + Vector3.up * (groundCheckRadius + 0.08f);
+        Vector3 pos = origin + Vector3.down * (Mathf.Max(groundCheckDistance + extentsY + 0.08f, 0.2f));
         Gizmos.DrawWireSphere(pos, groundCheckRadius);
     }
 }

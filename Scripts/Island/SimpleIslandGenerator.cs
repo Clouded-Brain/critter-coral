@@ -6,9 +6,9 @@ using UnityEngine;
 public class SimpleIslandGenerator : MonoBehaviour
 {
     [Header("Island Size")]
-    public int terrainSize = 1240;
+    public int terrainSize = 920;
     public float terrainHeight = 20f;
-    public int resolution = 420;
+    public int resolution = 360;
 
     [Header("Generation")]
     public bool randomizeSeedOnStart = true;
@@ -18,9 +18,9 @@ public class SimpleIslandGenerator : MonoBehaviour
     public float baseNoiseScale = 3.8f;
     public float hillNoiseScale = 7.2f;
     public float mountainNoiseScale = 13f;
-    [Range(0f, 1f)] public float flatlandStrength = 0.62f;
-    [Range(0f, 1f)] public float hillStrength = 0.48f;
-    [Range(0f, 1f)] public float mountainStrength = 0.58f;
+    [Range(0f, 1f)] public float flatlandStrength = 0.52f;
+    [Range(0f, 1f)] public float hillStrength = 0.66f;
+    [Range(0f, 1f)] public float mountainStrength = 0.78f;
     [Range(0f, 1f)] public float ridgeStrength = 0.34f;
     [Range(0f, 0.9f)] public float heightCompression = 0.55f;
 
@@ -114,7 +114,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         Vector2 oRidge = new Vector2(Random.value * 10000f, Random.value * 10000f);
         Vector2 oRiver = new Vector2(Random.value * 10000f, Random.value * 10000f);
 
-        Vector2[] lakeCenters = new Vector2[2];
+        Vector2[] lakeCenters = new Vector2[5];
         for (int i = 0; i < lakeCenters.Length; i++)
         {
             float angle = Random.Range(0f, Mathf.PI * 2f);
@@ -122,7 +122,7 @@ public class SimpleIslandGenerator : MonoBehaviour
             lakeCenters[i] = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
         }
 
-        int riverCount = Random.Range(1, 3);
+        int riverCount = 2;
         Vector2[] riverStart = new Vector2[riverCount];
         Vector2[] riverEnd = new Vector2[riverCount];
         for (int i = 0; i < riverCount; i++)
@@ -133,9 +133,23 @@ public class SimpleIslandGenerator : MonoBehaviour
             riverEnd[i] = new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * Random.Range(0.78f, 0.92f);
         }
 
+        // Two long quarter-map streams/rivers.
+        Vector2[] streamStart = new Vector2[2];
+        Vector2[] streamEnd = new Vector2[2];
+        for (int i = 0; i < 2; i++)
+        {
+            float angle = Random.Range(0f, Mathf.PI * 2f);
+            Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            float length = Random.Range(0.28f, 0.4f);
+            streamStart[i] = dir * Random.Range(0.08f, 0.2f);
+            streamEnd[i] = streamStart[i] + dir * length;
+            if (streamEnd[i].magnitude > 0.92f)
+                streamEnd[i] = streamEnd[i].normalized * 0.92f;
+        }
+
         // Guaranteed macro landforms: one major mountain + two notable hills.
-        Vector2 mainMountainCenter = Random.insideUnitCircle.normalized * Random.Range(0.26f, 0.48f);
-        float mainMountainRadius = Random.Range(0.18f, 0.26f);
+        Vector2 mainMountainCenter = Random.insideUnitCircle.normalized * Random.Range(0.22f, 0.44f);
+        float mainMountainRadius = Random.Range(0.22f, 0.30f);
 
         Vector2[] hillCenters = new Vector2[2];
         float[] hillRadii = new float[2];
@@ -175,18 +189,18 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float mountainMix = (mountains * 0.85f + ridges * ridgeStrength) * mountainStrength * mountainRingMask;
 
                 float bigMountain = 1f - Mathf.SmoothStep(mainMountainRadius * 0.35f, mainMountainRadius, Vector2.Distance(p, mainMountainCenter));
-                bigMountain = Mathf.Pow(Mathf.Clamp01(bigMountain), 1.35f) * 0.62f;
+                bigMountain = Mathf.Pow(Mathf.Clamp01(bigMountain), 1.15f) * 0.95f;
 
                 float hillsMacro = 0f;
                 for (int i = 0; i < hillCenters.Length; i++)
                 {
                     float hill = 1f - Mathf.SmoothStep(hillRadii[i] * 0.45f, hillRadii[i], Vector2.Distance(p, hillCenters[i]));
-                    hillsMacro = Mathf.Max(hillsMacro, hill * 0.22f);
+                    hillsMacro = Mathf.Max(hillsMacro, hill * 0.30f);
                 }
 
                 float height01 = plains;
                 height01 = Mathf.Lerp(height01, height01 * 0.78f + hillMix * 0.55f, 1f - flatMask * 0.92f);
-                height01 += mountainMix + hillsMacro + bigMountain * mountainRingMask;
+                height01 += mountainMix + hillsMacro + bigMountain;
 
                 // Preserve broad flat buildable interior areas.
                 float centerPlateau = Mathf.SmoothStep(0f, 0.45f, flatMask) * runtimeFlatness;
@@ -217,7 +231,15 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float riverNoise = Mathf.PerlinNoise(oRiver.x + nx * 12f, oRiver.y + nz * 12f);
                 riverMask *= Mathf.SmoothStep(0.2f, 0.9f, dist) * Mathf.Lerp(0.8f, 1.2f, riverNoise);
 
-                // Add two small lakes.
+                float streamMask = 0f;
+                for (int i = 0; i < streamStart.Length; i++)
+                {
+                    float ds = DistanceToSegment(p, streamStart[i], streamEnd[i]);
+                    float streamCore = 1f - Mathf.SmoothStep(0.015f, 0.05f, ds);
+                    streamMask = Mathf.Max(streamMask, streamCore);
+                }
+
+                // Add multiple lakes.
                 float lakeMask = 0f;
                 for (int i = 0; i < lakeCenters.Length; i++)
                 {
@@ -225,7 +247,7 @@ public class SimpleIslandGenerator : MonoBehaviour
                     lakeMask = Mathf.Max(lakeMask, 1f - Mathf.SmoothStep(0.05f, 0.16f, ld));
                 }
 
-                float inlandMask = Mathf.Clamp01((lakeMask + riverMask) * inlandWaterStrength);
+                float inlandMask = Mathf.Clamp01((lakeMask + riverMask + streamMask) * inlandWaterStrength);
                 float inlandAllowed = Mathf.SmoothStep(0.16f, 0.82f, islandMask) * (1f - oceanRing);
                 float inlandWaterTarget = waterLevel + 0.01f;
                 height01 = Mathf.Lerp(height01, inlandWaterTarget, inlandMask * inlandAllowed);
