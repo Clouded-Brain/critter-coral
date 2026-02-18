@@ -57,7 +57,11 @@ namespace CoralCritter
             var meshRenderer = terrainObject.AddComponent<MeshRenderer>();
             meshRenderer.sharedMaterial = EnsureTerrainMaterial();
 
-            meshFilter.sharedMesh = BuildMesh();
+            var mesh = BuildMesh();
+            meshFilter.sharedMesh = mesh;
+
+            var meshCollider = terrainObject.AddComponent<MeshCollider>();
+            meshCollider.sharedMesh = mesh;
 
             var waterObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
             waterObject.name = "WaterPlane";
@@ -80,11 +84,14 @@ namespace CoralCritter
                 return terrainMaterial;
             }
 
-            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            var fallback = new Material(shader)
-            {
-                color = new Color(0.32f, 0.62f, 0.35f, 1f)
-            };
+            var shader = Shader.Find("Universal Render Pipeline/Lit")
+                         ?? Shader.Find("Universal Render Pipeline/Simple Lit")
+                         ?? Shader.Find("Standard")
+                         ?? Shader.Find("Unlit/Color");
+
+            var fallback = new Material(shader);
+            fallback.color = new Color(0.32f, 0.62f, 0.35f, 1f);
+
             terrainMaterial = fallback;
             return terrainMaterial;
         }
@@ -96,11 +103,14 @@ namespace CoralCritter
                 return waterMaterial;
             }
 
-            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            var fallback = new Material(shader)
-            {
-                color = new Color(0.1f, 0.35f, 0.65f, 0.85f)
-            };
+            var shader = Shader.Find("Universal Render Pipeline/Lit")
+                         ?? Shader.Find("Universal Render Pipeline/Simple Lit")
+                         ?? Shader.Find("Standard")
+                         ?? Shader.Find("Unlit/Color");
+
+            var fallback = new Material(shader);
+            fallback.color = new Color(0.1f, 0.35f, 0.65f, 0.85f);
+
             waterMaterial = fallback;
             return waterMaterial;
         }

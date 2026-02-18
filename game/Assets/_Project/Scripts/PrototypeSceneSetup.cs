@@ -1,4 +1,7 @@
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace CoralCritter
 {
@@ -58,13 +61,15 @@ namespace CoralCritter
                 }
             }
 
-            if (player.GetComponent<CharacterController>() == null)
+            var controller = player.GetComponent<CharacterController>();
+            if (controller == null)
             {
-                var controller = player.AddComponent<CharacterController>();
-                controller.height = playerHeight;
-                controller.radius = playerRadius;
-                controller.center = new Vector3(0f, playerHeight * 0.5f, 0f);
+                controller = player.AddComponent<CharacterController>();
             }
+
+            controller.height = playerHeight;
+            controller.radius = playerRadius;
+            controller.center = new Vector3(0f, playerHeight * 0.5f, 0f);
 
             if (player.GetComponent<PlayerMovementController>() == null)
             {
@@ -98,6 +103,9 @@ namespace CoralCritter
             }
 
             iso.SetTarget(player);
+#if UNITY_EDITOR
+            EditorUtility.SetDirty(iso);
+#endif
 
             if (camera.GetComponent<CameraOcclusionController>() == null)
             {
@@ -124,6 +132,9 @@ namespace CoralCritter
 
             generator.SetSeed(seed);
             generator.Generate();
+#if UNITY_EDITOR
+            EditorUtility.SetDirty(generator);
+#endif
         }
     }
 }

@@ -1,10 +1,14 @@
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace CoralCritter
 {
     /// <summary>
     /// CC-001: Basic 3D movement controller with sprint support.
     /// Attach to player root with a CharacterController component.
+    /// Supports both legacy and new Unity input systems.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class PlayerMovementController : MonoBehaviour
@@ -30,11 +34,11 @@ namespace CoralCritter
 
         private void Update()
         {
-            var input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+            var input = ReadMoveInput();
             input = Vector2.ClampMagnitude(input, 1f);
 
             var moveDirection = new Vector3(input.x, 0f, input.y);
-            var isSprinting = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            var isSprinting = ReadSprintInput();
             var targetSpeed = isSprinting ? sprintSpeed : walkSpeed;
 
             var targetHorizontalVelocity = moveDirection * targetSpeed;
@@ -60,6 +64,36 @@ namespace CoralCritter
                 var targetRotation = Quaternion.LookRotation(moveDirection.normalized, Vector3.up);
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
             }
+        }
+
+        private static Vector2 ReadMoveInput()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null)
+            {
+                var x = 0f;
+                var y = 0f;
+
+                if (Keyboard.current.aKey.isPressed) x -= 1f;
+                if (Keyboard.current.dKey.isPressed) x += 1f;
+                if (Keyboard.current.sKey.isPressed) y -= 1f;
+                if (Keyboard.current.wKey.isPressed) y += 1f;
+
+                return new Vector2(x, y);
+            }
+#endif
+            return new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+        }
+
+        private static bool ReadSprintInput()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null)
+            {
+                return Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed;
+            }
+#endif
+            return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         }
     }
 }

@@ -58,3 +58,16 @@ This auto-creates:
 - `Player` (capsule + CharacterController + PlayerMovementController)
 - `Main Camera` with IsometricCameraController + CameraOcclusionController
 - `IslandGenerator` with IslandSeedPresetGenerator (deterministic seed)
+
+
+## Troubleshooting
+- **Camera does not follow player:**
+  - Re-run `PrototypeSceneSetup -> Create/Refresh Test Setup`.
+  - Confirm `Main Camera` has `IsometricCameraController` and its target is `Player`.
+- **Player does not move:**
+  - Movement now supports both legacy and new input system keyboard controls (WASD + Shift).
+- **Terrain is pink:**
+  - The generator now creates fallback materials automatically and prefers URP shaders.
+  - If pink persists, verify URP package import completed and re-run `Generate`.
+- **Player falls through map:**
+  - The generated island now includes a `MeshCollider`; re-run setup if scene was created before this update.
