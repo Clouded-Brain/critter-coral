@@ -61,7 +61,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Tooltip("Extra low-elevation shelf near the shore (as % of terrain height)")]
     [Range(0f, 0.25f)]
-    public float coastShelfHeight = 0.12f;
+    public float coastShelfHeight = 0.08f;
 
     [Tooltip("How wide the gentle coastal shelf is")]
     [Range(0.05f, 0.45f)]
@@ -70,7 +70,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Tooltip("How far down terrain sinks near map edge to guarantee ocean")]
     [Range(0.02f, 0.3f)]
-    public float oceanDepth = 0.1f;
+    public float oceanDepth = 0.12f;
 
     [Tooltip("Distance from center where ocean edge starts")]
     [Range(0.6f, 1f)]
@@ -93,7 +93,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Header("Water")]
     [Range(0f, 0.5f)]
-    public float waterLevel = 0.12f;
+    public float waterLevel = 0.07f;
     public Color waterColor = new Color(0.08f, 0.35f, 0.6f, 0.75f);
 
     [Header("Terrain Colors (auto-painted by slope)")]
@@ -281,7 +281,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
                 float inlandMask = Mathf.Clamp01((streamMask + lakeMask) * inlandWaterStrength);
                 float inlandAllowed = Mathf.SmoothStep(0.35f, 0.9f, mask) * (1f - oceanEdge);
-                float inlandWaterLevel = waterLevel + 0.015f;
+                float inlandWaterLevel = waterLevel + 0.008f;
                 height01 = Mathf.Lerp(height01, inlandWaterLevel, inlandMask * inlandAllowed);
 
                 heights[z, x] = height01 * terrainHeight;
