@@ -31,11 +31,17 @@ namespace CoralCritter
         [SerializeField] private Material terrainMaterial;
         [SerializeField] private Material waterMaterial;
 
+        [Header("Runtime")]
+        [SerializeField] private bool generateOnStart = true;
+
         private readonly List<GameObject> _spawnedObjects = new();
 
         private void Start()
         {
-            Generate();
+            if (generateOnStart)
+            {
+                Generate();
+            }
         }
 
         [ContextMenu("Generate")]
@@ -49,7 +55,7 @@ namespace CoralCritter
 
             var meshFilter = terrainObject.AddComponent<MeshFilter>();
             var meshRenderer = terrainObject.AddComponent<MeshRenderer>();
-            meshRenderer.sharedMaterial = terrainMaterial;
+            meshRenderer.sharedMaterial = EnsureTerrainMaterial();
 
             meshFilter.sharedMesh = BuildMesh();
 
@@ -58,8 +64,45 @@ namespace CoralCritter
             waterObject.transform.SetParent(transform, false);
             waterObject.transform.localScale = Vector3.one * (worldSize / 10f);
             waterObject.transform.localPosition = new Vector3(0f, shorelineHeight, 0f);
-            waterObject.GetComponent<Renderer>().sharedMaterial = waterMaterial;
+            waterObject.GetComponent<Renderer>().sharedMaterial = EnsureWaterMaterial();
             _spawnedObjects.Add(waterObject);
+        }
+
+        public void SetSeed(int nextSeed)
+        {
+            islandSeed = nextSeed;
+        }
+
+        private Material EnsureTerrainMaterial()
+        {
+            if (terrainMaterial != null)
+            {
+                return terrainMaterial;
+            }
+
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var fallback = new Material(shader)
+            {
+                color = new Color(0.32f, 0.62f, 0.35f, 1f)
+            };
+            terrainMaterial = fallback;
+            return terrainMaterial;
+        }
+
+        private Material EnsureWaterMaterial()
+        {
+            if (waterMaterial != null)
+            {
+                return waterMaterial;
+            }
+
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var fallback = new Material(shader)
+            {
+                color = new Color(0.1f, 0.35f, 0.65f, 0.85f)
+            };
+            waterMaterial = fallback;
+            return waterMaterial;
         }
 
         [ContextMenu("Clear")]

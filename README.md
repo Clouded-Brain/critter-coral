@@ -44,3 +44,17 @@ Use Unity Editor version:
    - Scroll wheel zoom constraints.
    - Player remains readable behind blockers.
    - Island shape is stable across runs with same seed value.
+
+
+## One-Click Test Scene Setup
+If you want a fast playable setup in `IslandPrototype`:
+1. Open `Assets/_Project/Scenes/IslandPrototype.unity`.
+2. Create an empty GameObject named `PrototypeSetup`.
+3. Add `PrototypeSceneSetup` component.
+4. In the component context menu, click `Create/Refresh Test Setup`.
+5. Press Play.
+
+This auto-creates:
+- `Player` (capsule + CharacterController + PlayerMovementController)
+- `Main Camera` with IsometricCameraController + CameraOcclusionController
+- `IslandGenerator` with IslandSeedPresetGenerator (deterministic seed)
