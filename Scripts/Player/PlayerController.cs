@@ -7,10 +7,10 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
-    public float moveSpeed = 12f;
+    public float moveSpeed = 13.5f;
     public float rotationSpeed = 10f;
     public float acceleration = 80f;
-    public float sprintMultiplier = 1.8f;
+    public float sprintMultiplier = 1.5f;
 
     [Header("Isometric")]
     public float isoAngle = 45f;
@@ -39,18 +39,18 @@ public class PlayerController : MonoBehaviour
     [Tooltip("Max slope angle the player can walk up (degrees)")]
     public float maxSlopeAngle = 60f;
     [Tooltip("Extra push force applied when going uphill")]
-    public float slopeAssistForce = 28f;
+    public float slopeAssistForce = 38f;
 
     [Tooltip("How much horizontal speed is retained while climbing (1 = full speed)")]
     [Range(0.4f, 1f)]
-    public float uphillSpeedRetention = 0.85f;
+    public float uphillSpeedRetention = 0.95f;
 
     [Tooltip("Additional forward pull when climbing slopes")]
-    public float uphillForwardAssist = 16f;
+    public float uphillForwardAssist = 24f;
 
     [Header("Ground Check")]
     public float groundCheckRadius = 0.4f;
-    public float groundCheckDistance = 0.3f;
+    public float groundCheckDistance = 0.45f;
     public LayerMask groundLayer = ~0;
 
     // Private state
@@ -107,11 +107,12 @@ public class PlayerController : MonoBehaviour
         moveDirection = Quaternion.Euler(0f, isoAngle, 0f) * new Vector3(h, 0f, v).normalized;
         isSprinting = kb.leftShiftKey.isPressed;
 
-        if (kb.spaceKey.wasPressedThisFrame)
+        bool spacePressed = kb.spaceKey.wasPressedThisFrame || Input.GetKeyDown(KeyCode.Space);
+        if (spacePressed)
         {
             jumpBufferTimer = jumpBufferTime;
         }
-        jumpHeld = kb.spaceKey.isPressed;
+        jumpHeld = kb.spaceKey.isPressed || Input.GetKey(KeyCode.Space);
     }
 
     // ─── GROUND CHECK ────────────────────────────
@@ -129,7 +130,7 @@ public class PlayerController : MonoBehaviour
         else
         {
             isGrounded = false;
-            coyoteTimer -= Time.fixedDeltaTime;
+            coyoteTimer = Mathf.Max(0f, coyoteTimer - Time.fixedDeltaTime);
             groundNormal = Vector3.up;
         }
     }
@@ -148,23 +149,23 @@ public class PlayerController : MonoBehaviour
                 : moveDirection;
 
             float slopeAngle = isGrounded ? Vector3.Angle(groundNormal, Vector3.up) : 0f;
-            float climbFactor = Mathf.InverseLerp(8f, maxSlopeAngle, slopeAngle);
+            float climbFactor = Mathf.InverseLerp(4f, maxSlopeAngle, slopeAngle);
             float retainedSpeed = Mathf.Lerp(1f, uphillSpeedRetention, climbFactor);
 
             Vector3 target = dir * speed * retainedSpeed;
-            target.y = rb.linearVelocity.y;
+            target.y = rb.velocity.y;
 
-            Vector3 delta = target - rb.linearVelocity;
+            Vector3 delta = target - rb.velocity;
             delta.y = 0;
             delta = Vector3.ClampMagnitude(delta, acceleration * Time.fixedDeltaTime);
-            rb.linearVelocity += delta;
+            rb.velocity += delta;
         }
         else
         {
-            Vector3 v = rb.linearVelocity;
+            Vector3 v = rb.velocity;
             v.x = Mathf.Lerp(v.x, 0f, 12f * Time.fixedDeltaTime);
             v.z = Mathf.Lerp(v.z, 0f, 12f * Time.fixedDeltaTime);
-            rb.linearVelocity = v;
+            rb.velocity = v;
         }
     }
 
@@ -181,7 +182,7 @@ public class PlayerController : MonoBehaviour
             Vector3 slopeDown = Vector3.ProjectOnPlane(Vector3.down, groundNormal).normalized;
             float uphill = Vector3.Dot(moveDirection.normalized, -slopeDown);
 
-            if (uphill > 0.05f)
+            if (uphill > 0.01f)
             {
                 float angleFactor = Mathf.InverseLerp(5f, maxSlopeAngle, angle);
                 float assist = slopeAssistForce * uphill * angleFactor;
@@ -193,9 +194,9 @@ public class PlayerController : MonoBehaviour
         }
 
         // Stick to ground going downhill (prevents bouncing off terrain)
-        if (angle > 2f && rb.linearVelocity.y > -0.1f && rb.linearVelocity.y < 1f)
+        if (angle > 2f && rb.velocity.y > -0.1f && rb.velocity.y < 1f)
         {
-            rb.AddForce(-groundNormal * 8f, ForceMode.Acceleration);
+            rb.AddForce(-groundNormal * 10f, ForceMode.Acceleration);
         }
     }
 
@@ -211,13 +212,13 @@ public class PlayerController : MonoBehaviour
             coyoteTimer = 0f;
             jumpHoldTimer = 0f;
 
-            Vector3 v = rb.linearVelocity;
+            Vector3 v = rb.velocity;
             v.y = jumpForce;
-            rb.linearVelocity = v;
+            rb.velocity = v;
         }
 
         // Hold spacebar = keep pushing up for a bit longer
-        if (jumpHeld && !isGrounded && jumpHoldTimer < maxJumpHoldTime && rb.linearVelocity.y > 0)
+        if (jumpHeld && !isGrounded && jumpHoldTimer < maxJumpHoldTime && rb.velocity.y > 0)
         {
             rb.AddForce(Vector3.up * holdJumpForce, ForceMode.Acceleration);
             jumpHoldTimer += Time.fixedDeltaTime;
@@ -228,10 +229,14 @@ public class PlayerController : MonoBehaviour
 
     void ApplyCustomGravity()
     {
-        if (isGrounded) return;
+        if (isGrounded)
+        {
+            jumpHoldTimer = 0f;
+            return;
+        }
 
         float extra;
-        if (rb.linearVelocity.y < 0)
+        if (rb.velocity.y < 0)
             extra = Physics.gravity.y * (fallMultiplier - 1f);      // Falling — heavy
         else if (!jumpHeld)
             extra = Physics.gravity.y * (fallMultiplier - 1f);      // Rising, released jump — cut short
@@ -257,9 +262,9 @@ public class PlayerController : MonoBehaviour
     public bool IsMoving() => moveDirection.magnitude > 0.1f;
     public bool IsSprinting() => isSprinting && IsMoving();
     public bool IsGrounded() => isGrounded;
-    public bool IsJumping() => !isGrounded && rb.linearVelocity.y > 0.5f;
-    public bool IsFalling() => !isGrounded && rb.linearVelocity.y < -0.5f;
-    public float GetCurrentSpeed() => new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z).magnitude;
+    public bool IsJumping() => !isGrounded && rb.velocity.y > 0.5f;
+    public bool IsFalling() => !isGrounded && rb.velocity.y < -0.5f;
+    public float GetCurrentSpeed() => new Vector3(rb.velocity.x, 0f, rb.velocity.z).magnitude;
 
     // ─── DEBUG GIZMOS ────────────────────────────
 

@@ -28,15 +28,15 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Tooltip("Threshold for hilly regions (higher = more flats)")]
     [Range(0.35f, 0.75f)]
-    public float hillThreshold = 0.62f;
+    public float hillThreshold = 0.6f;
 
     [Tooltip("How much of the terrain is flat meadow vs hills (0=all hills, 1=all flat)")]
     [Range(0f, 0.8f)]
-    public float flatness = 0.72f;
+    public float flatness = 0.74f;
 
     [Tooltip("How sharp ridges/cliffs are (higher = more dramatic)")]
     [Range(0f, 1f)]
-    public float ridgeStrength = 0.05f;
+    public float ridgeStrength = 0.06f;
 
     [Tooltip("Number of terrace steps (0 = smooth, 6-12 = Valheim-like stepping)")]
     [Range(0, 20)]
@@ -62,6 +62,19 @@ public class SimpleIslandGenerator : MonoBehaviour
     [Tooltip("How wide the gentle coastal shelf is")]
     [Range(0.05f, 0.45f)]
     public float coastShelfWidth = 0.34f;
+
+
+    [Tooltip("How far down terrain sinks near map edge to guarantee ocean")]
+    [Range(0.02f, 0.3f)]
+    public float oceanDepth = 0.1f;
+
+    [Tooltip("Distance from center where ocean edge starts")]
+    [Range(0.6f, 1f)]
+    public float oceanStart = 0.84f;
+
+    [Tooltip("Density of inland lakes/streams")]
+    [Range(0f, 1f)]
+    public float inlandWaterStrength = 0.3f;
 
     [Header("Island Shape")]
     [Range(1f, 5f)]
@@ -144,6 +157,15 @@ public class SimpleIslandGenerator : MonoBehaviour
         float ox3 = Random.Range(0f, 10000f), oz3 = Random.Range(0f, 10000f);
         float ox4 = Random.Range(0f, 10000f), oz4 = Random.Range(0f, 10000f);
         float ox5 = Random.Range(0f, 10000f), oz5 = Random.Range(0f, 10000f);
+        float ox6 = Random.Range(0f, 10000f), oz6 = Random.Range(0f, 10000f);
+
+        Vector2[] lakeCenters = new Vector2[3];
+        for (int i = 0; i < lakeCenters.Length; i++)
+        {
+            float angle = Random.Range(0f, Mathf.PI * 2f);
+            float radius = Random.Range(0.14f, 0.48f);
+            lakeCenters[i] = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+        }
 
         for (int z = 0; z <= resolution; z++)
         {
@@ -162,6 +184,10 @@ public class SimpleIslandGenerator : MonoBehaviour
                 // Create broad regions of meadow vs hill country.
                 float biomeRegion = Mathf.PerlinNoise(ox4 + nx * biomeRegionScale, oz4 + nz * biomeRegionScale);
                 float hillMask = Mathf.SmoothStep(hillThreshold - 0.14f, hillThreshold + 0.14f, biomeRegion);
+
+                float distCenter = Mathf.Sqrt((nx - 0.5f) * (nx - 0.5f) + (nz - 0.5f) * (nz - 0.5f)) * 2f;
+                float outerHillBias = Mathf.SmoothStep(0.45f, 0.9f, distCenter);
+                hillMask = Mathf.Clamp01(Mathf.Lerp(hillMask, 1f, outerHillBias * 0.45f));
 
                 // Apply flatness stronger in meadows, lighter in hilly zones.
                 float meadowBase = Mathf.Pow(baseNoise, 1.9f + flatness * 3.6f);
@@ -214,6 +240,27 @@ public class SimpleIslandGenerator : MonoBehaviour
                 // Additional near-shore easing to reduce steep declines into water.
                 float shoreEase = Mathf.SmoothStep(0f, coastShelfWidth * 1.35f, mask);
                 height01 = Mathf.Lerp(Mathf.Max(height01, waterLevel + coastShelfHeight * 0.7f), height01, shoreEase);
+
+                // Force true island ocean ring around edges.
+                float oceanEdge = Mathf.SmoothStep(oceanStart, 1f, dist);
+                height01 = Mathf.Lerp(height01, waterLevel - oceanDepth, oceanEdge);
+
+                // Add sparse inland lakes / stream-like depressions.
+                float channel = Mathf.PerlinNoise(ox6 + nx * 9f, oz6 + nz * 9f);
+                float streamMask = 1f - Mathf.SmoothStep(0.48f, 0.56f, channel);
+                float lakeMask = 0f;
+                for (int i = 0; i < lakeCenters.Length; i++)
+                {
+                    float lx = nx - 0.5f - lakeCenters[i].x;
+                    float lz = nz - 0.5f - lakeCenters[i].y;
+                    float lakeDist = Mathf.Sqrt(lx * lx + lz * lz);
+                    lakeMask = Mathf.Max(lakeMask, 1f - Mathf.SmoothStep(0.05f, 0.16f, lakeDist));
+                }
+
+                float inlandMask = Mathf.Clamp01((streamMask * 0.55f + lakeMask) * inlandWaterStrength);
+                float inlandAllowed = Mathf.SmoothStep(0.2f, 0.75f, mask) * (1f - oceanEdge);
+                float inlandWaterLevel = waterLevel + coastShelfHeight * 0.25f;
+                height01 = Mathf.Lerp(height01, inlandWaterLevel, inlandMask * inlandAllowed);
 
                 heights[z, x] = height01 * terrainHeight;
             }
@@ -417,7 +464,7 @@ public class SimpleIslandGenerator : MonoBehaviour
             Rigidbody rb = player.GetComponent<Rigidbody>();
             if (rb != null)
             {
-                rb.linearVelocity = Vector3.zero;
+                rb.velocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }
 
