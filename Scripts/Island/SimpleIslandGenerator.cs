@@ -36,11 +36,11 @@ public class SimpleIslandGenerator : MonoBehaviour
     [Header("Island Shape")]
     [Range(1.4f, 5f)] public float islandFalloff = 2.8f;
     [Range(0.55f, 0.95f)] public float oceanStart = 0.84f;
-    [Range(0.05f, 0.4f)] public float oceanDepth = 0.15f;
+    [Range(0.05f, 0.4f)] public float oceanDepth = 0.24f;
 
     [Header("Water")]
-    [Range(0f, 0.45f)] public float waterLevel = 0.015f;
-    public float waterPlaneYOffset = -1.2f;
+    [Range(0f, 0.45f)] public float waterLevel = 0.01f;
+    public float waterPlaneYOffset = -1.8f;
     [Range(0f, 1f)] public float inlandWaterStrength = 0.46f;
     [Range(0f, 0.35f)] public float inlandLandLift = 0.1f;
     public Color waterColor = new Color(0.08f, 0.35f, 0.6f, 0.75f);
@@ -177,7 +177,6 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float islandMask = Mathf.Clamp01(1f - Mathf.Pow(warpedDist, islandFalloff));
                 islandMask = Mathf.SmoothStep(0f, 1f, islandMask);
                 float oceanRing = Mathf.SmoothStep(oceanStart, 1.04f, warpedDist);
-                float effectiveWaterLevel01 = waterLevel + (waterPlaneYOffset / Mathf.Max(terrainHeight, 0.001f));
                 float inletMask = Mathf.SmoothStep(0.62f, 0.96f, warpedDist) * Mathf.SmoothStep(0.55f, 0.9f, coastNoise);
                 float coastDetail = Mathf.PerlinNoise(oBase.x + nx * 17f, oBase.y + nz * 17f);
                 float coastNotchMask = Mathf.SmoothStep(0.64f, 1.02f, warpedDist) * Mathf.SmoothStep(0.58f, 0.95f, coastDetail);
@@ -259,23 +258,23 @@ public class SimpleIslandGenerator : MonoBehaviour
 
                 float inlandMask = Mathf.Clamp01((lakeMask * 1.1f + riverMask * 1.35f + streamMask * 1.45f) * inlandWaterStrength);
                 float inlandAllowed = Mathf.SmoothStep(0.16f, 0.82f, islandMask) * (1f - oceanRing);
-                float inlandWaterTarget = effectiveWaterLevel01 - 0.014f;
+                float inlandWaterTarget = waterLevel - 0.012f;
                 height01 = Mathf.Lerp(height01, inlandWaterTarget, inlandMask * inlandAllowed);
 
                 // Coastal inlets and cave-like alcoves for less round shorelines.
                 float caveNoise = Mathf.PerlinNoise(oMountain.x + nx * 18f, oMountain.y + nz * 18f);
                 float caveMask = Mathf.SmoothStep(0.7f, 1.04f, warpedDist) * Mathf.SmoothStep(0.76f, 0.96f, caveNoise);
-                height01 = Mathf.Lerp(height01, effectiveWaterLevel01 - 0.01f, caveMask * 0.66f);
-                height01 = Mathf.Lerp(height01, effectiveWaterLevel01 - oceanDepth * 0.62f, inletMask * 0.82f);
-                height01 = Mathf.Lerp(height01, effectiveWaterLevel01 - oceanDepth * 0.54f, coastNotchMask * 0.74f);
+                height01 = Mathf.Lerp(height01, waterLevel - 0.01f, caveMask * 0.66f);
+                height01 = Mathf.Lerp(height01, waterLevel - oceanDepth * 0.62f, inletMask * 0.82f);
+                height01 = Mathf.Lerp(height01, waterLevel - oceanDepth * 0.54f, coastNotchMask * 0.74f);
 
                 // Keep interior above water so the map is never "all water".
                 float interiorSafety = Mathf.SmoothStep(0.2f, 0.95f, islandMask) * (1f - oceanRing);
-                float interiorMin = effectiveWaterLevel01 + inlandLandLift;
-                height01 = Mathf.Max(height01, Mathf.Lerp(effectiveWaterLevel01, interiorMin, interiorSafety));
+                float interiorMin = waterLevel + inlandLandLift;
+                height01 = Mathf.Max(height01, Mathf.Lerp(waterLevel, interiorMin, interiorSafety));
 
                 // Force ocean around outside edge.
-                float oceanTarget = effectiveWaterLevel01 - oceanDepth;
+                float oceanTarget = waterLevel - oceanDepth;
                 height01 = Mathf.Lerp(height01, oceanTarget, oceanRing);
 
                 heights[z, x] = height01 * terrainHeight;
