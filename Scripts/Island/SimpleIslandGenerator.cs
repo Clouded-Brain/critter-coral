@@ -93,10 +93,10 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Header("Water")]
     [Range(0f, 0.5f)]
-    public float waterLevel = 0.04f;
+    public float waterLevel = 0.02f;
 
     [Tooltip("Additional world-space Y offset applied to the rendered water plane")]
-    public float waterPlaneYOffset = -1.4f;
+    public float waterPlaneYOffset = -3.2f;
     public Color waterColor = new Color(0.08f, 0.35f, 0.6f, 0.75f);
 
     [Header("Terrain Colors (auto-painted by slope)")]
@@ -284,7 +284,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
                 float inlandMask = Mathf.Clamp01((streamMask + lakeMask) * inlandWaterStrength);
                 float inlandAllowed = Mathf.SmoothStep(0.35f, 0.9f, mask) * (1f - oceanEdge);
-                float inlandWaterLevel = waterLevel + 0.004f;
+                float inlandWaterLevel = waterLevel + 0.002f;
                 height01 = Mathf.Lerp(height01, inlandWaterLevel, inlandMask * inlandAllowed);
 
                 heights[z, x] = height01 * terrainHeight;
