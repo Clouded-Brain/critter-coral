@@ -10,7 +10,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 {
     [Header("Island Size")]
     public int terrainSize = 240;
-    public float terrainHeight = 12f;
+    public float terrainHeight = 14f;
     public int resolution = 200;
 
     [Header("Generation")]
@@ -36,11 +36,11 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Tooltip("How much of the terrain is flat meadow vs hills (0=all hills, 1=all flat)")]
     [Range(0f, 0.8f)]
-    public float flatness = 0.79f;
+    public float flatness = 0.68f;
 
     [Tooltip("How sharp ridges/cliffs are (higher = more dramatic)")]
     [Range(0f, 1f)]
-    public float ridgeStrength = 0.06f;
+    public float ridgeStrength = 0.14f;
 
     [Tooltip("Number of terrace steps (0 = smooth, 6-12 = Valheim-like stepping)")]
     [Range(0, 20)]
@@ -78,11 +78,11 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Tooltip("Density of inland lakes/streams")]
     [Range(0f, 1f)]
-    public float inlandWaterStrength = 0.08f;
+    public float inlandWaterStrength = 0.2f;
 
     [Tooltip("Minimum interior land lift above water level")]
     [Range(0f, 0.35f)]
-    public float inlandLandLift = 0.14f;
+    public float inlandLandLift = 0.16f;
 
     [Header("Island Shape")]
     [Range(1f, 5f)]
@@ -215,15 +215,15 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float ridgeRaw = Mathf.PerlinNoise(ox2 + nx * ridgeNoiseScale, oz2 + nz * ridgeNoiseScale);
                 float ridge = 1f - Mathf.Abs(ridgeRaw - 0.5f) * 2f;
                 ridge = Mathf.Pow(ridge, 3f);
-                ridge *= ridgeStrength * Mathf.Lerp(0.02f, 0.38f, hillMask + mountainRing * 0.55f);
+                ridge *= ridgeStrength * Mathf.Lerp(0.04f, 0.62f, hillMask + mountainRing * 0.7f);
 
                 // ── 3. DETAIL NOISE — small bumps and roughness ──
                 float detail = Mathf.PerlinNoise(ox3 + nx * detailNoiseScale, oz3 + nz * detailNoiseScale);
-                detail = (detail - 0.5f) * Mathf.Lerp(0.001f, 0.008f, hillMask);
+                detail = (detail - 0.5f) * Mathf.Lerp(0.003f, 0.015f, hillMask + mountainRing * 0.5f);
 
                 // ── 4. BIOME VARIATION — occasional raised hill groups ──
                 float plateauNoise = Mathf.PerlinNoise(ox5 + nx * 3f, oz5 + nz * 3f);
-                float biomeBoost = Mathf.Max(0f, plateauNoise - 0.72f) * 0.16f * (hillMask + mountainRing * 0.4f);
+                float biomeBoost = Mathf.Max(0f, plateauNoise - 0.66f) * 0.24f * (hillMask + mountainRing * 0.55f);
 
                 // ── 5. COMBINE ──
                 float combined = baseNoise + ridge + detail + biomeBoost;
@@ -270,8 +270,8 @@ public class SimpleIslandGenerator : MonoBehaviour
 
                 // Add sparse inland lakes / stream-like depressions.
                 float channel = Mathf.PerlinNoise(ox6 + nx * 9f, oz6 + nz * 9f);
-                float streamBand = 1f - Mathf.SmoothStep(0f, 0.035f, Mathf.Abs(channel - 0.5f));
-                float streamMask = streamBand * 0.35f;
+                float streamBand = 1f - Mathf.SmoothStep(0f, 0.06f, Mathf.Abs(channel - 0.5f));
+                float streamMask = streamBand * 0.55f;
 
                 float lakeMask = 0f;
                 for (int i = 0; i < lakeCenters.Length; i++)
@@ -279,12 +279,12 @@ public class SimpleIslandGenerator : MonoBehaviour
                     float lx = nx - 0.5f - lakeCenters[i].x;
                     float lz = nz - 0.5f - lakeCenters[i].y;
                     float lakeDist = Mathf.Sqrt(lx * lx + lz * lz);
-                    lakeMask = Mathf.Max(lakeMask, 1f - Mathf.SmoothStep(0.045f, 0.11f, lakeDist));
+                    lakeMask = Mathf.Max(lakeMask, 1f - Mathf.SmoothStep(0.05f, 0.16f, lakeDist));
                 }
 
                 float inlandMask = Mathf.Clamp01((streamMask + lakeMask) * inlandWaterStrength);
-                float inlandAllowed = Mathf.SmoothStep(0.35f, 0.9f, mask) * (1f - oceanEdge);
-                float inlandWaterLevel = waterLevel + 0.002f;
+                float inlandAllowed = Mathf.SmoothStep(0.3f, 0.92f, mask) * (1f - oceanEdge);
+                float inlandWaterLevel = waterLevel + 0.008f;
                 height01 = Mathf.Lerp(height01, inlandWaterLevel, inlandMask * inlandAllowed);
 
                 heights[z, x] = height01 * terrainHeight;

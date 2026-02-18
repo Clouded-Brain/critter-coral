@@ -7,10 +7,10 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
-    public float moveSpeed = 13.5f;
+    public float moveSpeed = 17f;
     public float rotationSpeed = 10f;
     public float acceleration = 80f;
-    public float sprintMultiplier = 1.5f;
+    public float sprintMultiplier = 1.4f;
 
     [Header("Isometric")]
     public float isoAngle = 45f;
