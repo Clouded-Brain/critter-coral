@@ -9,9 +9,13 @@ using UnityEngine;
 public class SimpleIslandGenerator : MonoBehaviour
 {
     [Header("Island Size")]
-    public int terrainSize = 200;
-    public float terrainHeight = 14f;
+    public int terrainSize = 240;
+    public float terrainHeight = 12f;
     public int resolution = 200;
+
+    [Header("Generation")]
+    [Tooltip("Generates a different island each play run while still allowing reproducible seeds when disabled")]
+    public bool randomizeSeedOnStart = true;
 
     [Header("Terrain Style")]
     [Tooltip("Large rolling hills scale")]
@@ -32,7 +36,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Tooltip("How much of the terrain is flat meadow vs hills (0=all hills, 1=all flat)")]
     [Range(0f, 0.8f)]
-    public float flatness = 0.74f;
+    public float flatness = 0.79f;
 
     [Tooltip("How sharp ridges/cliffs are (higher = more dramatic)")]
     [Range(0f, 1f)]
@@ -74,11 +78,11 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Tooltip("Density of inland lakes/streams")]
     [Range(0f, 1f)]
-    public float inlandWaterStrength = 0.12f;
+    public float inlandWaterStrength = 0.08f;
 
     [Tooltip("Minimum interior land lift above water level")]
     [Range(0f, 0.35f)]
-    public float inlandLandLift = 0.1f;
+    public float inlandLandLift = 0.14f;
 
     [Header("Island Shape")]
     [Range(1f, 5f)]
@@ -105,6 +109,9 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     void Start()
     {
+        if (randomizeSeedOnStart)
+            seed = Random.Range(int.MinValue, int.MaxValue);
+
         Debug.Log("🐚 IslandGenerator: Starting generation...");
         try
         {
@@ -190,8 +197,11 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float hillMask = Mathf.SmoothStep(hillThreshold - 0.14f, hillThreshold + 0.14f, biomeRegion);
 
                 float distCenter = Mathf.Sqrt((nx - 0.5f) * (nx - 0.5f) + (nz - 0.5f) * (nz - 0.5f)) * 2f;
-                float outerHillBias = Mathf.SmoothStep(0.45f, 0.9f, distCenter);
+                float outerHillBias = Mathf.SmoothStep(0.4f, 0.88f, distCenter);
                 hillMask = Mathf.Clamp01(Mathf.Lerp(hillMask, 1f, outerHillBias * 0.45f));
+
+                // Encourage mountain bands near outer third while keeping center flatter/playable.
+                float mountainRing = Mathf.SmoothStep(0.52f, 0.78f, distCenter) * (1f - Mathf.SmoothStep(0.9f, 1.05f, distCenter));
 
                 // Apply flatness stronger in meadows, lighter in hilly zones.
                 float meadowBase = Mathf.Pow(baseNoise, 1.9f + flatness * 3.6f);
@@ -202,20 +212,20 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float ridgeRaw = Mathf.PerlinNoise(ox2 + nx * ridgeNoiseScale, oz2 + nz * ridgeNoiseScale);
                 float ridge = 1f - Mathf.Abs(ridgeRaw - 0.5f) * 2f;
                 ridge = Mathf.Pow(ridge, 3f);
-                ridge *= ridgeStrength * Mathf.Lerp(0.03f, 0.5f, hillMask);
+                ridge *= ridgeStrength * Mathf.Lerp(0.02f, 0.38f, hillMask + mountainRing * 0.55f);
 
                 // ── 3. DETAIL NOISE — small bumps and roughness ──
                 float detail = Mathf.PerlinNoise(ox3 + nx * detailNoiseScale, oz3 + nz * detailNoiseScale);
-                detail = (detail - 0.5f) * Mathf.Lerp(0.002f, 0.012f, hillMask);
+                detail = (detail - 0.5f) * Mathf.Lerp(0.001f, 0.008f, hillMask);
 
                 // ── 4. BIOME VARIATION — occasional raised hill groups ──
                 float plateauNoise = Mathf.PerlinNoise(ox5 + nx * 3f, oz5 + nz * 3f);
-                float biomeBoost = Mathf.Max(0f, plateauNoise - 0.72f) * 0.2f * hillMask;
+                float biomeBoost = Mathf.Max(0f, plateauNoise - 0.72f) * 0.16f * (hillMask + mountainRing * 0.4f);
 
                 // ── 5. COMBINE ──
                 float combined = baseNoise + ridge + detail + biomeBoost;
                 combined = Mathf.Clamp01(Mathf.InverseLerp(0.08f, 1.05f, combined));
-                combined = Mathf.Lerp(combined, Mathf.SmoothStep(0f, 1f, combined), 0.8f);
+                combined = Mathf.Lerp(combined, Mathf.SmoothStep(0f, 1f, combined), 0.88f);
 
                 // ── 6. TERRACING — Valheim-like stepped terrain ──
                 if (terraceSteps > 0)
@@ -248,7 +258,7 @@ public class SimpleIslandGenerator : MonoBehaviour
                 height01 = Mathf.Lerp(Mathf.Max(height01, waterLevel + coastShelfHeight * 0.7f), height01, shoreEase);
 
                 // Keep interior terrain safely above sea level (prevents all-water worlds).
-                float interiorMask = Mathf.SmoothStep(0.2f, 0.92f, mask) * (1f - oceanEdge);
+                float interiorMask = Mathf.SmoothStep(0.12f, 0.95f, mask) * (1f - oceanEdge);
                 float interiorFloor = waterLevel + inlandLandLift;
                 height01 = Mathf.Max(height01, Mathf.Lerp(waterLevel, interiorFloor, interiorMask));
 
@@ -278,7 +288,35 @@ public class SimpleIslandGenerator : MonoBehaviour
             }
         }
 
-        return SmoothHeightmap(heights);
+        float[,] smoothed = SmoothHeightmap(heights);
+        return EnsureIslandBalance(smoothed);
+    }
+
+    float[,] EnsureIslandBalance(float[,] heights)
+    {
+        int size = resolution + 1;
+        float safeInterior = (waterLevel + inlandLandLift * 0.92f) * terrainHeight;
+        float oceanTarget = (waterLevel - oceanDepth) * terrainHeight;
+
+        for (int z = 0; z < size; z++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float nx = (float)x / resolution;
+                float nz = (float)z / resolution;
+                float dx = nx - 0.5f;
+                float dz = nz - 0.5f;
+                float dist = Mathf.Sqrt(dx * dx + dz * dz) * 2f;
+
+                float interior = 1f - Mathf.SmoothStep(0.68f, 0.98f, dist);
+                float oceanRing = Mathf.SmoothStep(oceanStart, 1.06f, dist);
+
+                heights[z, x] = Mathf.Max(heights[z, x], safeInterior * interior);
+                heights[z, x] = Mathf.Lerp(heights[z, x], oceanTarget, oceanRing);
+            }
+        }
+
+        return heights;
     }
 
     float[,] SmoothHeightmap(float[,] source)
