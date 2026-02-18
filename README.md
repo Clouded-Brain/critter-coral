@@ -54,8 +54,8 @@ If you want a fast playable setup in `IslandPrototype`:
 4. In the component context menu, click `Create/Refresh Test Setup`.
 5. Press Play.
 
-This auto-creates:
-- `Player` (capsule + CharacterController + PlayerMovementController)
+This auto-creates and assigns everything needed for a playable test loop:
+- `Player` (capsule + CharacterController + PlayerMovementController, with WASD/Shift movement controls handled directly by the script)
 - `Main Camera` with IsometricCameraController + CameraOcclusionController
 - `IslandGenerator` with IslandSeedPresetGenerator (deterministic seed)
 
@@ -73,7 +73,8 @@ This auto-creates:
 - **Player falls through map:**
   - The generated island now includes a `MeshCollider`; re-run setup if scene was created before this update.
 
-- **Player spawns inside terrain:**
-  - `PrototypeSceneSetup` now raycasts the generated island and places the player above surface height. Re-run `Create/Refresh Test Setup` to re-place the player.
+- **Player spawns inside terrain or rises higher every refresh:**
+  - `PrototypeSceneSetup` now ignores player self-hits while raycasting and repositions from the configured spawn origin each refresh.
+  - Re-run `Create/Refresh Test Setup` to reset player height directly onto terrain surface.
 - **No gravity / player floats:**
   - Verify the `Player` object has a `CharacterController` and `PlayerMovementController`. Gravity is applied every frame when not grounded.

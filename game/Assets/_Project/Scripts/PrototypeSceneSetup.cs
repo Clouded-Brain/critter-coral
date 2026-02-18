@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -19,7 +20,7 @@ namespace CoralCritter
         [Header("Island")]
         [SerializeField] private int seed = 1337;
         [SerializeField] private float spawnHeightProbe = 80f;
-        [SerializeField] private float spawnSurfacePadding = 0.2f;
+        [SerializeField] private float spawnSurfacePadding = 0.35f;
 
         [ContextMenu("Create/Refresh Test Setup")]
         public void CreateOrRefreshSetup()
@@ -27,7 +28,6 @@ namespace CoralCritter
             EnsureIslandGenerator();
             var player = EnsurePlayer();
             MovePlayerToSurface(player);
-
             EnsureCamera(player.transform);
         }
 
@@ -67,11 +67,18 @@ namespace CoralCritter
             controller.height = playerHeight;
             controller.radius = playerRadius;
             controller.center = new Vector3(0f, playerHeight * 0.5f, 0f);
+            controller.stepOffset = 0.35f;
+            controller.skinWidth = 0.03f;
+            controller.slopeLimit = 55f;
+            controller.minMoveDistance = 0f;
 
-            if (player.GetComponent<PlayerMovementController>() == null)
+            var movement = player.GetComponent<PlayerMovementController>();
+            if (movement == null)
             {
-                player.AddComponent<PlayerMovementController>();
+                movement = player.AddComponent<PlayerMovementController>();
             }
+
+            movement.enabled = true;
 
             return player;
         }
@@ -144,15 +151,42 @@ namespace CoralCritter
                 return;
             }
 
-            var probeStart = new Vector3(playerSpawn.x, spawnHeightProbe, playerSpawn.z);
-            if (Physics.Raycast(probeStart, Vector3.down, out var hit, spawnHeightProbe * 2f))
+            var controllerWasEnabled = characterController.enabled;
+            if (controllerWasEnabled)
             {
-                var groundedY = hit.point.y + characterController.height * 0.5f + spawnSurfacePadding;
-                player.transform.position = new Vector3(playerSpawn.x, groundedY, playerSpawn.z);
-                return;
+                characterController.enabled = false;
             }
 
-            player.transform.position = playerSpawn;
+            try
+            {
+                var probeStart = new Vector3(playerSpawn.x, spawnHeightProbe, playerSpawn.z);
+                var hits = Physics.RaycastAll(
+                    probeStart,
+                    Vector3.down,
+                    spawnHeightProbe * 2f,
+                    Physics.DefaultRaycastLayers,
+                    QueryTriggerInteraction.Ignore);
+
+                Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
+
+                foreach (var hit in hits)
+                {
+                    if (hit.transform == null || hit.transform.IsChildOf(player.transform))
+                    {
+                        continue;
+                    }
+
+                    var groundedY = hit.point.y + characterController.height * 0.5f + spawnSurfacePadding + characterController.skinWidth;
+                    player.transform.position = new Vector3(playerSpawn.x, groundedY, playerSpawn.z);
+                    return;
+                }
+
+                player.transform.position = playerSpawn;
+            }
+            finally
+            {
+                characterController.enabled = controllerWasEnabled;
+            }
         }
     }
 }
