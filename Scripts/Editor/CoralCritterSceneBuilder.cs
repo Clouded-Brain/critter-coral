@@ -229,20 +229,20 @@ public class CoralCritterSceneBuilder : EditorWindow
 
         SimpleIslandGenerator gen = islandGenObj.AddComponent<SimpleIslandGenerator>();
         gen.terrainSize = 600;
-        gen.terrainHeight = 36f;
+        gen.terrainHeight = 40f;
         gen.resolution = 300;
         gen.islandFalloff = 2.5f;
         gen.baseNoiseScale = 6.8f;
         gen.ridgeNoiseScale = 15f;
-        gen.ridgeStrength = 0.72f;
+        gen.ridgeStrength = 0.9f;
         gen.mountainStrength = 1f;
-        gen.hillStrength = 0.9f;
-        gen.inlandWaterStrength = 0.38f;
+        gen.hillStrength = 1f;
+        gen.inlandWaterStrength = 0.52f;
         gen.flatness = 0.22f;
         gen.terraceSteps = 0;
         gen.seed = 42;
-        gen.waterLevel = 0.032f;
-        gen.waterPlaneYOffset = -0.95f;
+        gen.waterLevel = 0.028f;
+        gen.waterPlaneYOffset = -0.2f;
         gen.waterColor = new Color(0.08f, 0.35f, 0.6f, 0.75f);
 
         return islandGenObj;
