@@ -23,6 +23,13 @@ public class SimpleIslandGenerator : MonoBehaviour
     [Tooltip("Fine detail bumps")]
     public float detailNoiseScale = 40f;
 
+    [Tooltip("Controls how large flat-vs-hilly regions are")]
+    public float biomeRegionScale = 2.4f;
+
+    [Tooltip("Threshold for hilly regions (higher = more flats)")]
+    [Range(0.35f, 0.75f)]
+    public float hillThreshold = 0.56f;
+
     [Tooltip("How much of the terrain is flat meadow vs hills (0=all hills, 1=all flat)")]
     [Range(0f, 0.8f)]
     public float flatness = 0.35f;
@@ -41,7 +48,11 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     [Tooltip("How many smoothing passes to run")]
     [Range(0, 6)]
-    public int smoothingIterations = 2;
+    public int smoothingIterations = 3;
+
+    [Tooltip("Compresses extreme height differences while preserving shape")]
+    [Range(0f, 0.8f)]
+    public float heightCompression = 0.4f;
 
     [Header("Island Shape")]
     [Range(1f, 5f)]
@@ -123,6 +134,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         float ox2 = Random.Range(0f, 10000f), oz2 = Random.Range(0f, 10000f);
         float ox3 = Random.Range(0f, 10000f), oz3 = Random.Range(0f, 10000f);
         float ox4 = Random.Range(0f, 10000f), oz4 = Random.Range(0f, 10000f);
+        float ox5 = Random.Range(0f, 10000f), oz5 = Random.Range(0f, 10000f);
 
         for (int z = 0; z <= resolution; z++)
         {
@@ -138,25 +150,33 @@ public class SimpleIslandGenerator : MonoBehaviour
                 baseNoise += 0.25f * Mathf.PerlinNoise(ox1 + nx * baseNoiseScale * 4f, oz1 + nz * baseNoiseScale * 4f);
                 baseNoise /= 1.75f;
 
-                // Apply flatness — squash lower areas flat, keep peaks
-                baseNoise = Mathf.Pow(baseNoise, 1f + flatness * 2f);
+                // Create broad regions of meadow vs hill country.
+                float biomeRegion = Mathf.PerlinNoise(ox4 + nx * biomeRegionScale, oz4 + nz * biomeRegionScale);
+                float hillMask = Mathf.SmoothStep(hillThreshold - 0.14f, hillThreshold + 0.14f, biomeRegion);
+
+                // Apply flatness stronger in meadows, lighter in hilly zones.
+                float meadowBase = Mathf.Pow(baseNoise, 1.35f + flatness * 2.6f);
+                float hillBase = Mathf.Pow(baseNoise, 0.95f + flatness * 0.9f);
+                baseNoise = Mathf.Lerp(meadowBase, hillBase, hillMask);
 
                 // ── 2. RIDGE NOISE — creates cliff edges and ridgelines ──
                 float ridgeRaw = Mathf.PerlinNoise(ox2 + nx * ridgeNoiseScale, oz2 + nz * ridgeNoiseScale);
                 float ridge = 1f - Mathf.Abs(ridgeRaw - 0.5f) * 2f;
                 ridge = Mathf.Pow(ridge, 3f);
-                ridge *= ridgeStrength;
+                ridge *= ridgeStrength * Mathf.Lerp(0.2f, 1f, hillMask);
 
                 // ── 3. DETAIL NOISE — small bumps and roughness ──
                 float detail = Mathf.PerlinNoise(ox3 + nx * detailNoiseScale, oz3 + nz * detailNoiseScale);
-                detail = (detail - 0.5f) * 0.04f;
+                detail = (detail - 0.5f) * Mathf.Lerp(0.012f, 0.035f, hillMask);
 
-                // ── 4. BIOME VARIATION — some areas are higher plateaus ──
-                float biome = Mathf.PerlinNoise(ox4 + nx * 3f, oz4 + nz * 3f);
-                float biomeBoost = biome > 0.55f ? (biome - 0.55f) * 1.5f : 0f;
+                // ── 4. BIOME VARIATION — occasional raised hill groups ──
+                float plateauNoise = Mathf.PerlinNoise(ox5 + nx * 3f, oz5 + nz * 3f);
+                float biomeBoost = Mathf.Max(0f, plateauNoise - 0.62f) * 0.55f * hillMask;
 
                 // ── 5. COMBINE ──
                 float combined = baseNoise + ridge + detail + biomeBoost;
+                combined = Mathf.Clamp01(Mathf.InverseLerp(0.04f, 1.2f, combined));
+                combined = Mathf.Lerp(combined, Mathf.SmoothStep(0f, 1f, combined), 0.35f);
 
                 // ── 6. TERRACING — Valheim-like stepped terrain ──
                 if (terraceSteps > 0)
@@ -164,7 +184,7 @@ public class SimpleIslandGenerator : MonoBehaviour
                     float t = combined * terraceSteps;
                     float stepped = Mathf.Floor(t) / terraceSteps;
                     float smooth = t / terraceSteps;
-                    combined = Mathf.Lerp(smooth, stepped, 0.2f);
+                    combined = Mathf.Lerp(smooth, stepped, 0.12f);
                 }
 
                 // ── 7. ISLAND MASK — circular falloff ──
@@ -174,7 +194,8 @@ public class SimpleIslandGenerator : MonoBehaviour
                 float mask = Mathf.Clamp01(1f - Mathf.Pow(dist, islandFalloff));
                 mask = Mathf.SmoothStep(0f, 1f, mask);
 
-                heights[z, x] = combined * mask * terrainHeight;
+                float compressed = Mathf.Lerp(combined, Mathf.Sqrt(combined), heightCompression);
+                heights[z, x] = compressed * mask * terrainHeight;
             }
         }
 
