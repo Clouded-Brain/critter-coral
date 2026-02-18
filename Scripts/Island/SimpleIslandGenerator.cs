@@ -39,7 +39,7 @@ public class SimpleIslandGenerator : MonoBehaviour
     [Range(0.05f, 0.4f)] public float oceanDepth = 0.2f;
 
     [Header("Water")]
-    [Range(0f, 0.45f)] public float waterLevel = 0.11f;
+    [Range(0f, 0.45f)] public float waterLevel = 0.06f;
     public float waterPlaneYOffset = 0f;
     [Range(0f, 1f)] public float inlandWaterStrength = 0.2f;
     [Range(0f, 0.35f)] public float inlandLandLift = 0.1f;
