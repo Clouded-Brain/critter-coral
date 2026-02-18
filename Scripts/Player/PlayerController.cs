@@ -102,13 +102,13 @@ public class PlayerController : MonoBehaviour
 
         isSprinting = kb.leftShiftKey.isPressed;
 
-        bool spacePressed = kb.spaceKey.wasPressedThisFrame || Input.GetKeyDown(KeyCode.Space);
+        bool spacePressed = kb.spaceKey.wasPressedThisFrame;
         if (spacePressed)
         {
             jumpBufferTimer = jumpBufferTime;
         }
 
-        jumpHeld = kb.spaceKey.isPressed || Input.GetKey(KeyCode.Space);
+        jumpHeld = kb.spaceKey.isPressed;
     }
 
     void CheckGround()
