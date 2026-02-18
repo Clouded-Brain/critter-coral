@@ -39,8 +39,8 @@ public class SimpleIslandGenerator : MonoBehaviour
     [Range(0.05f, 0.4f)] public float oceanDepth = 0.2f;
 
     [Header("Water")]
-    [Range(0f, 0.45f)] public float waterLevel = 0.06f;
-    public float waterPlaneYOffset = 0f;
+    [Range(0f, 0.45f)] public float waterLevel = 0.032f;
+    public float waterPlaneYOffset = -0.95f;
     [Range(0f, 1f)] public float inlandWaterStrength = 0.36f;
     [Range(0f, 0.35f)] public float inlandLandLift = 0.1f;
     public Color waterColor = new Color(0.08f, 0.35f, 0.6f, 0.75f);
@@ -257,7 +257,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
                 float inlandMask = Mathf.Clamp01((lakeMask + riverMask * 1.15f + streamMask * 1.2f) * inlandWaterStrength);
                 float inlandAllowed = Mathf.SmoothStep(0.16f, 0.82f, islandMask) * (1f - oceanRing);
-                float inlandWaterTarget = Mathf.Max(0f, waterLevel - 0.01f);
+                float inlandWaterTarget = Mathf.Max(0f, waterLevel - 0.016f);
                 height01 = Mathf.Lerp(height01, inlandWaterTarget, inlandMask * inlandAllowed);
 
                 // Coastal inlets and cave-like alcoves for less round shorelines.
