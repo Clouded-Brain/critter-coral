@@ -241,9 +241,9 @@ public class CoralCritterSceneBuilder : EditorWindow
         gen.flatness = 0.22f;
         gen.terraceSteps = 0;
         gen.seed = 42;
-        gen.waterLevel = 0.006f;
-        gen.waterPlaneYOffset = -3.0f;
-        gen.oceanDepth = 0.22f;
+        gen.waterLevel = 0.0f;
+        gen.waterPlaneYOffset = -8.0f;
+        gen.oceanDepth = 0.12f;
         gen.waterColor = new Color(0.08f, 0.35f, 0.6f, 0.75f);
 
         return islandGenObj;

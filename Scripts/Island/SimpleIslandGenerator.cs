@@ -36,12 +36,12 @@ public class SimpleIslandGenerator : MonoBehaviour
     [Header("Island Shape")]
     [Range(1.4f, 5f)] public float islandFalloff = 2.8f;
     [Range(0.55f, 0.95f)] public float oceanStart = 0.84f;
-    [Range(0.05f, 0.4f)] public float oceanDepth = 0.22f;
-
-    [Header("Water")]
-    [Range(0f, 0.45f)] public float waterLevel = 0.006f;
-    public float waterPlaneYOffset = -3.0f;
-    [Range(0f, 1f)] public float inlandWaterStrength = 0.46f;
+    [Range(0f, 0.45f)] public float waterLevel = 0.0f;
+    public float waterPlaneYOffset = -8.0f;
+        return Mathf.Min(rawSeaLevel, -8f);
+        waterLevel = 0f;
+        waterPlaneYOffset = -8.0f;
+        oceanDepth = Mathf.Clamp(oceanDepth, 0.08f, 0.18f);
     [Range(0f, 0.35f)] public float inlandLandLift = 0.1f;
     public Color waterColor = new Color(0.08f, 0.35f, 0.6f, 0.75f);
 
