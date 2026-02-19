@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// SimpleIslandGenerator - Procedural island tuned for playable isometric traversal.
+/// SimpleIslandGenerator — Procedural island tuned for playable isometric traversal.
 /// </summary>
 public class SimpleIslandGenerator : MonoBehaviour
 {
@@ -36,33 +36,19 @@ public class SimpleIslandGenerator : MonoBehaviour
     [Header("Island Shape")]
     [Range(1.4f, 5f)] public float islandFalloff = 2.8f;
     [Range(0.55f, 0.95f)] public float oceanStart = 0.84f;
-    [Range(0f, 0.45f)] public float waterLevel = 0.0f;
-    public float waterPlaneYOffset = -8.0f;
-    private const float ForcedRuntimeWaterLevel = 0f;
-    private const float ForcedRuntimeWaterOffset = -8f;
-    private float GetSeaLevelWorld()
-        return Mathf.Min(rawSeaLevel, ForcedRuntimeWaterOffset);
-    private float GetSeaLevel01()
-        waterLevel = ForcedRuntimeWaterLevel;
-        waterPlaneYOffset = ForcedRuntimeWaterOffset;
-    public Color waterColor = new Color(0.08f, 0.35f, 0.6f, 0.75f);
+    [Range(0.05f, 0.4f)] public float oceanDepth = 0.22f;
+    [Range(0f, 0.45f)] public float waterLevel = 0.006f;
+    public float waterPlaneYOffset = -3.0f;
+        waterLevel = Mathf.Min(waterLevel, 0.006f);
+        waterPlaneYOffset = Mathf.Min(waterPlaneYOffset, -3.0f);
+        oceanDepth = Mathf.Clamp(oceanDepth, 0.18f, 0.28f);
 
-    [Header("Smoothing")]
-    [Range(0f, 1f)] public float smoothingStrength = 0.28f;
-    [Range(0, 6)] public int smoothingIterations = 2;
+        Debug.Log($"🐚 Water tuning runtime: level={waterLevel}, offset={waterPlaneYOffset}, depth={oceanDepth}");
+        Debug.Log("🐚 IslandGenerator: Starting generation...");
+            Debug.Log("🐚 IslandGenerator: Complete!");
+            Debug.LogError($"🐚 IslandGenerator: FAILED — {e.Message}\n{e.StackTrace}");
 
-    [Header("Terrain Colors (auto-painted by slope)")]
-    public Color grassColor = new Color(0.22f, 0.45f, 0.12f);
-    public Color dirtColor = new Color(0.4f, 0.3f, 0.15f);
-    public Color rockColor = new Color(0.35f, 0.33f, 0.3f);
-    public Color sandColor = new Color(0.65f, 0.55f, 0.35f);
-
-    private GameObject islandObj;
-    private GameObject waterObj;
-    private float[,] heightmap;
-
-
-    float GetSeaLevelWorld()
+        Debug.Log($"🐚 Island: {mesh.vertexCount} verts, {mesh.triangles.Length / 3} tris, seed={seed}");
     {
         Debug.Log($"[Island] Water tuning runtime: level={waterLevel}, offset={waterPlaneYOffset}, depth={oceanDepth}, seaY={GetSeaLevelWorld()}");
         Debug.Log("[Island] IslandGenerator: Starting generation...");
@@ -187,8 +173,6 @@ public class SimpleIslandGenerator : MonoBehaviour
             hillRadii[i] = Random.Range(0.10f, 0.17f);
         }
 
-        float seaLevel01 = GetSeaLevel01();
-
         for (int z = 0; z <= resolution; z++)
         {
             for (int x = 0; x <= resolution; x++)
@@ -240,7 +224,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
                 // Preserve broad flat buildable interior areas.
                 float centerPlateau = Mathf.SmoothStep(0f, 0.45f, flatMask) * runtimeFlatness;
-                height01 = Mathf.Lerp(height01, Mathf.Max(height01, seaLevel01 + inlandLandLift * 1.2f), centerPlateau * 0.85f);
+                height01 = Mathf.Lerp(height01, Mathf.Max(height01, waterLevel + inlandLandLift * 1.2f), centerPlateau * 0.85f);
 
                 // Height compression keeps slopes traversable while retaining variation.
                 height01 = Mathf.Clamp01(Mathf.Lerp(height01, Mathf.Sqrt(Mathf.Clamp01(height01)), heightCompression));
@@ -286,23 +270,23 @@ public class SimpleIslandGenerator : MonoBehaviour
 
                 float inlandMask = Mathf.Clamp01((lakeMask * 1.1f + riverMask * 1.35f + streamMask * 1.45f) * inlandWaterStrength);
                 float inlandAllowed = Mathf.SmoothStep(0.16f, 0.82f, islandMask) * (1f - oceanRing);
-                float inlandWaterTarget = seaLevel01 - 0.01f;
+                float inlandWaterTarget = waterLevel - 0.01f;
                 height01 = Mathf.Lerp(height01, inlandWaterTarget, inlandMask * inlandAllowed);
 
                 // Coastal inlets and cave-like alcoves for less round shorelines.
                 float caveNoise = Mathf.PerlinNoise(oMountain.x + nx * 18f, oMountain.y + nz * 18f);
                 float caveMask = Mathf.SmoothStep(0.7f, 1.04f, warpedDist) * Mathf.SmoothStep(0.76f, 0.96f, caveNoise);
-                height01 = Mathf.Lerp(height01, seaLevel01 - 0.01f, caveMask * 0.66f);
-                height01 = Mathf.Lerp(height01, seaLevel01 - oceanDepth * 0.62f, inletMask * 0.82f);
-                height01 = Mathf.Lerp(height01, seaLevel01 - oceanDepth * 0.54f, coastNotchMask * 0.74f);
+                height01 = Mathf.Lerp(height01, waterLevel - 0.01f, caveMask * 0.66f);
+                height01 = Mathf.Lerp(height01, waterLevel - oceanDepth * 0.62f, inletMask * 0.82f);
+                height01 = Mathf.Lerp(height01, waterLevel - oceanDepth * 0.54f, coastNotchMask * 0.74f);
 
                 // Keep interior above water so the map is never "all water".
                 float interiorSafety = Mathf.SmoothStep(0.2f, 0.95f, islandMask) * (1f - oceanRing);
-                float interiorMin = seaLevel01 + inlandLandLift;
-                height01 = Mathf.Max(height01, Mathf.Lerp(seaLevel01, interiorMin, interiorSafety));
+                float interiorMin = waterLevel + inlandLandLift;
+                height01 = Mathf.Max(height01, Mathf.Lerp(waterLevel, interiorMin, interiorSafety));
 
                 // Force ocean around outside edge.
-                float oceanTarget = seaLevel01 - oceanDepth;
+                float oceanTarget = waterLevel - oceanDepth;
                 height01 = Mathf.Lerp(height01, oceanTarget, oceanRing);
 
                 heights[z, x] = height01 * terrainHeight;
@@ -445,7 +429,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
         Vector3[] normals = mesh.normals;
         Color[] colors = new Color[totalVerts];
-        float waterWorldH = GetSeaLevelWorld();
+        float waterWorldH = waterLevel * terrainHeight + waterPlaneYOffset;
         Vector3 fakeLightDir = new Vector3(0.55f, 0.85f, 0.2f).normalized;
 
         for (int i = 0; i < totalVerts; i++)
@@ -498,7 +482,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         waterObj = GameObject.CreatePrimitive(PrimitiveType.Plane);
         waterObj.name = "WaterPlane";
 
-        float waterWorldHeight = GetSeaLevelWorld();
+        float waterWorldHeight = waterLevel * terrainHeight + waterPlaneYOffset;
         waterObj.transform.position = new Vector3(0f, waterWorldHeight, 0f);
 
         float planeScale = terrainSize / 10f * 1.6f;
@@ -508,7 +492,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         rend.material = CreateSimpleMaterial(waterColor);
         Destroy(waterObj.GetComponent<Collider>());
 
-        Debug.Log($"[Island] Water at height {waterWorldHeight}");
+        Debug.Log($"🐚 Water at height {waterWorldHeight}");
     }
 
     void PositionPlayerAboveTerrain()
@@ -520,7 +504,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         {
             float bestX = 0f, bestZ = 0f;
             float bestHeight = SampleHeight(0f, 0f);
-            float minH = GetSeaLevelWorld() + 1.8f;
+            float minH = waterLevel * terrainHeight + waterPlaneYOffset + 1.8f;
 
             for (int i = 0; i < 24; i++)
             {
@@ -545,7 +529,7 @@ public class SimpleIslandGenerator : MonoBehaviour
                 rb.angularVelocity = Vector3.zero;
             }
 
-            Debug.Log($"[Island] Player at {spawnPos}");
+            Debug.Log($"🐚 Player at {spawnPos}");
         }
     }
 
@@ -559,7 +543,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         };
 
         Random.InitState(seed + 999);
-        float minH = GetSeaLevelWorld() + 1f;
+        float minH = waterLevel * terrainHeight + waterPlaneYOffset + 1f;
         int placed = 0;
 
         for (int attempt = 0; attempt < 60 && placed < 10; attempt++)
@@ -592,7 +576,7 @@ public class SimpleIslandGenerator : MonoBehaviour
             beacon.GetComponent<Renderer>().material = CreateSimpleMaterial(Color.white);
         }
 
-        Debug.Log($"[Island] Placed {placed} landmarks");
+        Debug.Log($"🐚 Placed {placed} landmarks");
     }
 
     public float SampleHeight(float worldX, float worldZ)
@@ -666,7 +650,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     void CreateFallbackGround()
     {
-        Debug.LogWarning("[Island] Using fallback flat ground.");
+        Debug.LogWarning("🐚 Using fallback flat ground.");
         GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
         ground.name = "Island";
         ground.transform.localScale = new Vector3(terrainSize / 10f, 1f, terrainSize / 10f);
@@ -683,7 +667,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         Gizmos.DrawWireCube(Vector3.up * terrainHeight * 0.5f,
             new Vector3(terrainSize, terrainHeight, terrainSize));
         Gizmos.color = new Color(0f, 0.5f, 1f, 0.3f);
-        Gizmos.DrawCube(Vector3.up * GetSeaLevelWorld(),
+        Gizmos.DrawCube(Vector3.up * (waterLevel * terrainHeight + waterPlaneYOffset),
             new Vector3(terrainSize, 0.1f, terrainSize));
     }
 }
