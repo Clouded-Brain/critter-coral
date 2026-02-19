@@ -38,11 +38,13 @@ public class SimpleIslandGenerator : MonoBehaviour
     [Range(0.55f, 0.95f)] public float oceanStart = 0.84f;
     [Range(0f, 0.45f)] public float waterLevel = 0.0f;
     public float waterPlaneYOffset = -8.0f;
-        return Mathf.Min(rawSeaLevel, -8f);
-        waterLevel = 0f;
-        waterPlaneYOffset = -8.0f;
-        oceanDepth = Mathf.Clamp(oceanDepth, 0.08f, 0.18f);
-    [Range(0f, 0.35f)] public float inlandLandLift = 0.1f;
+    private const float ForcedRuntimeWaterLevel = 0f;
+    private const float ForcedRuntimeWaterOffset = -8f;
+    private float GetSeaLevelWorld()
+        return Mathf.Min(rawSeaLevel, ForcedRuntimeWaterOffset);
+    private float GetSeaLevel01()
+        waterLevel = ForcedRuntimeWaterLevel;
+        waterPlaneYOffset = ForcedRuntimeWaterOffset;
     public Color waterColor = new Color(0.08f, 0.35f, 0.6f, 0.75f);
 
     [Header("Smoothing")]
