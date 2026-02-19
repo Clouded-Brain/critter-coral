@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// SimpleIslandGenerator — Procedural island tuned for playable isometric traversal.
+/// SimpleIslandGenerator - Procedural island tuned for playable isometric traversal.
 /// </summary>
 public class SimpleIslandGenerator : MonoBehaviour
 {
@@ -64,12 +64,12 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     float GetSeaLevelWorld()
     {
-        // Resolve legacy scalar+offset into a single world-space sea height and cap it so sea never covers land spawn.
-        float rawSeaLevel = waterLevel * terrainHeight + waterPlaneYOffset;
-        return Mathf.Min(rawSeaLevel, -2.5f);
-    }
+        Debug.Log($"[Island] Water tuning runtime: level={waterLevel}, offset={waterPlaneYOffset}, depth={oceanDepth}, seaY={GetSeaLevelWorld()}");
+        Debug.Log("[Island] IslandGenerator: Starting generation...");
+            Debug.Log("[Island] IslandGenerator: Complete!");
+            Debug.LogError($"[Island] IslandGenerator: FAILED - {e.Message}\n{e.StackTrace}");
 
-    float GetSeaLevel01()
+        Debug.Log($"[Island] Island: {mesh.vertexCount} verts, {mesh.triangles.Length / 3} tris, seed={seed}");
     {
         return terrainHeight > 0.001f ? GetSeaLevelWorld() / terrainHeight : 0f;
     }
@@ -508,7 +508,7 @@ public class SimpleIslandGenerator : MonoBehaviour
         rend.material = CreateSimpleMaterial(waterColor);
         Destroy(waterObj.GetComponent<Collider>());
 
-        Debug.Log($"🐚 Water at height {waterWorldHeight}");
+        Debug.Log($"[Island] Water at height {waterWorldHeight}");
     }
 
     void PositionPlayerAboveTerrain()
@@ -545,7 +545,7 @@ public class SimpleIslandGenerator : MonoBehaviour
                 rb.angularVelocity = Vector3.zero;
             }
 
-            Debug.Log($"🐚 Player at {spawnPos}");
+            Debug.Log($"[Island] Player at {spawnPos}");
         }
     }
 
@@ -592,7 +592,7 @@ public class SimpleIslandGenerator : MonoBehaviour
             beacon.GetComponent<Renderer>().material = CreateSimpleMaterial(Color.white);
         }
 
-        Debug.Log($"🐚 Placed {placed} landmarks");
+        Debug.Log($"[Island] Placed {placed} landmarks");
     }
 
     public float SampleHeight(float worldX, float worldZ)
@@ -666,7 +666,7 @@ public class SimpleIslandGenerator : MonoBehaviour
 
     void CreateFallbackGround()
     {
-        Debug.LogWarning("🐚 Using fallback flat ground.");
+        Debug.LogWarning("[Island] Using fallback flat ground.");
         GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
         ground.name = "Island";
         ground.transform.localScale = new Vector3(terrainSize / 10f, 1f, terrainSize / 10f);
